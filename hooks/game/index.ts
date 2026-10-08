@@ -1,5 +1,6 @@
 export * from './bag'
 export * from './board'
+export * from './game'
 export * from './moves'
 export * from './pieces'
 export * from './random'
