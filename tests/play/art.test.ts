@@ -1,0 +1,247 @@
+import { describe, expect, test, tier } from 'claude-code/testing'
+
+import Play from '../../hooks/play'
+import type { Line, Outside, Play as PlayState } from '../../hooks/play'
+
+tier('user')
+
+const AWAY = { paneFocused: false, seedBase: 0, best: 0 }
+const PANE = { ...AWAY, paneFocused: true }
+const CLICK = { type: 'down', x: 0, y: 0 } as const
+
+const texts = (play: PlayState, outside: Outside & { best: number }, columns: number) => Play.screenOf(play, outside, columns).map(Play.textOf)
+
+function frames(play: PlayState, count: number, outside: Outside = AWAY): PlayState {
+  let current = play
+  for (let at = 0; at < count; at++) {
+    current = Play.ticked(current, outside)
+  }
+
+  return current
+}
+
+/** Seed 0: a drop, three steps left and a hold, then 25 frames (1250 ms) of gravity. */
+function midGame(): PlayState {
+  const clicked = Play.pointed(Play.startPlay(0), CLICK, AWAY)
+
+  return frames(Play.keyed(Play.keyed(clicked, { key: 'x' }, AWAY), { key: 'aaac' }, AWAY), 25)
+}
+
+function toppedOut(play: PlayState): PlayState {
+  let current = play
+  for (let drops = 0; drops < 200 && current.game?.phase !== 'over'; drops++) {
+    current = Play.keyed(current, { key: ' ' }, AWAY)
+  }
+
+  return current
+}
+
+/** Every state worth drawing: before a game, playing, idle, paused, over, on each focus. */
+function everyState(): { label: string; play: PlayState; outside: Outside & { best: number } }[] {
+  const mid = midGame()
+  const over = toppedOut(mid)
+
+  return [
+    { label: 'fresh', play: Play.startPlay(0), outside: AWAY },
+    { label: 'fresh, pane', play: Play.startPlay(0), outside: PANE },
+    { label: 'mid', play: mid, outside: { ...AWAY, best: 9_999_999 } },
+    { label: 'idle', play: frames(mid, 40), outside: AWAY },
+    { label: 'paused', play: Play.keyed(mid, { key: 'p' }, AWAY), outside: AWAY },
+    { label: 'over', play: over, outside: AWAY },
+    { label: 'over, pane', play: { ...over, region: false }, outside: PANE },
+  ]
+}
+
+describe('the game region at 80 and 120 columns', () => {
+  test('before the first game, at 80: an empty well, centred, with the click to play card', () => {
+    expect(texts(Play.startPlay(0), AWAY, 80)).toEqual([
+    "                 hold        ╭────────────────────╮  next",
+    "                 ╭────────╮  │· · · · · · · · · · │  ╭────────╮",
+    "                 │        │  │· · · · · · · · · · │  │        │",
+    "                 │        │  │· · · · · · · · · · │  │        │",
+    "                 ╰────────╯  │· · · · · · · · · · │  │        │",
+    "                             │· · · · · · · · · · │  │        │",
+    "                 score       │· · · · · · · · · · │  │        │",
+    "                 0           │· · · · · · · · · · │  │        │",
+    "                             │· · · · · · · · · · │  │        │",
+    "                 level       │                    │  │        │",
+    "                 1           │   click to play    │  ╰────────╯",
+    "                             │                    │",
+    "                 lines       │· · · · · · · · · · │",
+    "                 0           │· · · · · · · · · · │",
+    "                             │· · · · · · · · · · │",
+    "                 best        │· · · · · · · · · · │",
+    "                 0           │· · · · · · · · · · │",
+    "                             │· · · · · · · · · · │",
+    "                             │· · · · · · · · · · │",
+    "                             │· · · · · · · · · · │",
+    "                             │· · · · · · · · · · │",
+    "                             ╰────────────────────╯",
+    "                 click to play · or ctrl+x tab, then w a s d",
+    ])
+  })
+
+  test('mid game, at 120: the falling piece, its ghost, the held piece, the next three and the numbers', () => {
+    expect(texts(midGame(), { ...AWAY, best: 5000 }, 120)).toEqual([
+    "                                     hold        ╭────────────────────╮  next",
+    "                                     ╭────────╮  │· · · · ▐▌▐▌· · · · │  ╭────────╮",
+    "                                     │  ▐▌    │  │· · · · · · · · · · │  │▐▌      │",
+    "                                     │▐▌▐▌▐▌  │  │· · · · · · · · · · │  │▐▌▐▌▐▌  │",
+    "                                     ╰────────╯  │· · · · · · · · · · │  │        │",
+    "                                                 │· · · · · · · · · · │  │    ▐▌  │",
+    "                                     score       │· · · · · · · · · · │  │▐▌▐▌▐▌  │",
+    "                                     40          │· · · · · · · · · · │  │        │",
+    "                                                 │· · · · · · · · · · │  │▐▌▐▌▐▌▐▌│",
+    "                                     level       │· · · · · · · · · · │  │        │",
+    "                                     1           │· · · · · · · · · · │  ╰────────╯",
+    "                                                 │· · · · · · · · · · │",
+    "                                     lines       │· · · · · · · · · · │",
+    "                                     0           │· · · · · · · · · · │",
+    "                                                 │· · · · · · · · · · │",
+    "                                     best        │· · · · · · · · · · │",
+    "                                     5000        │· · · · · · · · · · │",
+    "                                                 │· · · ░░░░· · · · · │",
+    "                                                 │· · · · ░░░░· · · · │",
+    "                                                 │· · · · ▐▌▐▌· · · · │",
+    "                                                 │· · · ▐▌▐▌· · · · · │",
+    "                                                 ╰────────────────────╯",
+    "                                     playing · Esc gives keys back",
+    ])
+  })
+
+  test('game over, at 80: the card shows the final score and click to play again', () => {
+    expect(texts(toppedOut(midGame()), AWAY, 80)).toEqual([
+    "                 hold        ╭────────────────────╮  next",
+    "                 ╭────────╮  │· · · · ▐▌· · · · · │  ╭────────╮",
+    "                 │  ▐▌    │  │· · · ▐▌▐▌▐▌· · · · │  │▐▌▐▌    │",
+    "                 │▐▌▐▌▐▌  │  │· · · · · ▐▌· · · · │  │  ▐▌▐▌  │",
+    "                 ╰────────╯  │· · · ▐▌▐▌▐▌· · · · │  │        │",
+    "                             │· · · ▐▌▐▌▐▌▐▌· · · │  │▐▌▐▌▐▌▐▌│",
+    "                 score       │· · · ▐▌· · · · · · │  │        │",
+    "                 238         │· · · ▐▌▐▌▐▌· · · · │  │        │",
+    "                             │                    │  │  ▐▌▐▌  │",
+    "                 level       │     game over      │  │  ▐▌▐▌  │",
+    "                 1           │     score 238      │  ╰────────╯",
+    "                             │                    │",
+    "                 lines       │click to play again │",
+    "                 0           │                    │",
+    "                             │· · · ▐▌▐▌▐▌· · · · │",
+    "                 best        │· · · ▐▌· · · · · · │",
+    "                 238         │· · · ▐▌▐▌▐▌· · · · │",
+    "                             │· · · ▐▌▐▌· · · · · │",
+    "                             │· · · · ▐▌▐▌· · · · │",
+    "                             │· · · · ▐▌▐▌· · · · │",
+    "                             │· · · ▐▌▐▌· · · · · │",
+    "                             ╰────────────────────╯",
+    "                 playing · Esc gives keys back",
+    ])
+  })
+
+  test('no line is wider than the region, in every state, at the narrowest width that fits, at 80 and at 120', () => {
+    for (const columns of [Play.GAME_COLUMNS, 80, 120]) {
+      for (const { label, play, outside } of everyState()) {
+        const lines = texts(play, outside, columns)
+        expect(lines.length, label).toBe(Play.GAME_ROWS)
+        for (const line of lines) {
+          expect(line.length, `${label} at ${columns}: ${line}`).toBeLessThanOrEqual(columns)
+        }
+      }
+    }
+  })
+
+  test('narrower than the game, one line asks for room, and it fits', () => {
+    const lines = texts(midGame(), AWAY, Play.GAME_COLUMNS - 1)
+    expect(lines).toEqual(['line-clear needs 46 columns: widen the pane'])
+    expect(lines[0]!.length).toBeLessThanOrEqual(Play.GAME_COLUMNS - 1)
+  })
+})
+
+describe('who has the keys, on the status line and the card', () => {
+  const statusOf = (play: PlayState, outside: Outside & { best: number }) => texts(play, outside, 80).at(-1)!.trim()
+  const cardOf = (play: PlayState, outside: Outside & { best: number }) =>
+    Play.screenOf(play, outside, 80)
+      .slice(1, -2)
+      .flatMap(line => line.filter(segment => segment.backgroundColor !== undefined).map(segment => segment.text.trim()))
+      .filter(text => text !== '')
+
+  test('nobody: the status says how to get the keys, in the warning color', () => {
+    const line = Play.screenOf(frames(midGame(), 40), AWAY, 80).at(-1)!
+    expect(Play.textOf(line).trim()).toBe('click to play · or ctrl+x tab, then w a s d')
+    expect(line.at(-1)?.color).toBe('warning')
+  })
+
+  test('the clicked region: playing, and how to give the keys back', () => {
+    expect(statusOf(midGame(), AWAY)).toBe('playing · Esc gives keys back')
+  })
+
+  test('the focused pane: its letters, and how to give the keys back', () => {
+    expect(statusOf({ ...midGame(), region: false }, PANE)).toBe('keys: w a s d · Esc gives keys back')
+  })
+
+  test('the cards: click to play while nobody has the keys, paused, game over, and the pane path\'s p', () => {
+    expect(cardOf(Play.startPlay(0), AWAY)).toEqual(['click to play'])
+    expect(cardOf(Play.startPlay(0), PANE)).toEqual(['p to play'])
+    expect(cardOf(midGame(), AWAY)).toEqual([])
+    expect(cardOf(frames(midGame(), 40), AWAY)).toEqual(['click to play'])
+    expect(cardOf(Play.keyed(midGame(), { key: 'p' }, AWAY), AWAY)).toEqual(['paused', 'p resumes'])
+    const over = toppedOut(midGame())
+    expect(cardOf(over, AWAY)).toEqual(['game over', `score ${over.game!.score}`, 'click to play again'])
+    expect(cardOf({ ...over, region: false }, PANE)).toEqual(['game over', `score ${over.game!.score}`, 'p to play again'])
+  })
+
+  test('best shows the higher of the stored best and the score in play', () => {
+    const mid = midGame()
+    const bestOf = (best: number) => texts(mid, { ...AWAY, best }, 80)[16]!.trim().split(/\s+/)[0]
+    expect(bestOf(0)).toBe(String(mid.game!.score))
+    expect(bestOf(5000)).toBe('5000')
+  })
+})
+
+describe('the drawn tree', () => {
+  type Node = { type: string; props: Record<string, unknown> }
+  const fake = {
+    Box: (props: Record<string, unknown>) => ({ type: 'Box', props }),
+    Text: (props: Record<string, unknown>) => ({ type: 'Text', props }),
+  } as unknown as Parameters<typeof Play.screenTree>[0]
+  const strings = (node: unknown): string[] => {
+    if (typeof node === 'string') {
+      return [node]
+    }
+    const { children } = (node as Node).props
+    return Array.isArray(children) ? children.flatMap(strings) : strings(children)
+  }
+
+  test('every text drawn in every state is free of control characters', () => {
+    for (const { label, play, outside } of everyState()) {
+      for (const text of strings(Play.screenTree(fake, Play.screenOf(play, outside, 80)))) {
+        expect(/[\u0000-\u001f\u007f-\u009f]/.test(text), `${label}: ${JSON.stringify(text)}`).toBe(false)
+      }
+    }
+  })
+
+  test('a control character given to draw is dropped, the rest kept', () => {
+    const lines: Line[] = [[{ text: 'a\u0007b\u001b[31mc\u009b' }]]
+    expect(strings(Play.screenTree(fake, lines))).toEqual(['ab[31mc'])
+  })
+})
+
+describe('the look', () => {
+  const segmentsOf = (play: PlayState) => Play.screenOf(play, AWAY, 80).flat()
+
+  test('the falling piece is tiles in its color; its ghost is shaded and dim in the same color', () => {
+    const mid = midGame()
+    const color = Play.PIECE_COLORS[mid.game!.active!.kind]
+    const ghosts = segmentsOf(mid).filter(segment => segment.text.includes(Play.GHOST))
+    expect(ghosts.length).toBeGreaterThan(0)
+    expect(ghosts.every(segment => segment.color === color && segment.dimColor === true)).toBe(true)
+    const tiles = segmentsOf(mid).filter(segment => segment.text.includes(Play.CELL) && segment.color === color)
+    expect(tiles.every(segment => segment.dimColor === undefined)).toBe(true)
+  })
+
+  test('seven distinct piece colors of its own, none a pure primary or secondary', () => {
+    const colors = Object.values(Play.PIECE_COLORS).map(color => String(color).toUpperCase())
+    expect(new Set(colors).size).toBe(7)
+    const pure = ['#00FFFF', '#FFFF00', '#800080', '#00FF00', '#FF0000', '#0000FF', '#FF7F00', '#FFA500']
+    expect(colors.filter(color => pure.includes(color))).toEqual([])
+  })
+})
