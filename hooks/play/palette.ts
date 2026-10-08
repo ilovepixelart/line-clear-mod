@@ -3,18 +3,20 @@ import type { Color } from 'claude-code'
 import type { Kind } from '../game'
 
 /**
- * The game's own colors, for a dark terminal: soft dusk tones, one per
- * piece, each distinct from its neighbours in hue and lightness. Chrome uses
- * the person's theme keys where one fits.
+ * The game's own colors, for a dark terminal: one per piece, apart in hue
+ * and lightness so they stay distinct for the three common color vision
+ * deficiencies and on a 256-color terminal, and none in the hue the common
+ * convention gives its piece. Chrome uses the person's theme keys where one
+ * fits.
  */
 export const PIECE_COLORS: Readonly<Record<Kind, Color>> = {
-  I: '#E59BC4',
-  O: '#7ED6C0',
-  T: '#F0C987',
-  S: '#9FB3FF',
-  Z: '#5FC4DA',
-  J: '#F49A7E',
-  L: '#B5D97A',
+  I: '#EE5588',
+  O: '#BB66EE',
+  T: '#EEFF22',
+  S: '#AABBFF',
+  Z: '#77FFCC',
+  J: '#889911',
+  L: '#33AAAA',
 }
 
 /** The dark well a ghost is mixed toward. */

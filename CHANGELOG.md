@@ -33,6 +33,9 @@ release may change behaviour.
   ends on a gold card, `✦ new best ✦` twinkling every 250 ms, with the score
   and how far it beat the old best; while the score in play is ahead, the
   best label reads `best  new!`.
+- Seven piece colors of the game's own that stay distinct (CIEDE2000 of 12
+  or more) for normal vision, protanopia, deuteranopia and tritanopia, and
+  keep seven different codes, ghosts too, on a 256-color terminal.
 - The best score is kept across sessions, the only value stored.
 - `openOnTurn` setting, off by default: opens the pane, unfocused, when a
   turn starts.

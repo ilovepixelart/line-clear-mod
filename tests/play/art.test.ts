@@ -2,8 +2,22 @@ import { describe, expect, test, tier } from 'claude-code/testing'
 
 import Play from '../../hooks/play'
 import type { Line, Outside, Play as PlayState } from '../../hooks/play'
+import { ansi256, closestPair, rgbOf } from '../fixtures/color'
+import type { Rgb } from '../fixtures/color'
 
 tier('user')
+
+/** The hue angle of a color, 0 to 360. */
+function hueOf([r, g, b]: Rgb): number {
+  const [max, min] = [Math.max(r, g, b), Math.min(r, g, b)]
+  if (max === min) {
+    return 0
+  }
+  const d = max - min
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+
+  return (h * 60 + 360) % 360
+}
 
 const AWAY = { paneFocused: false, seedBase: 0, best: 0 }
 const PANE = { ...AWAY, paneFocused: true }
@@ -264,17 +278,14 @@ describe('the look', () => {
     expect(tiles.every(segment => segment.dimColor === undefined)).toBe(true)
   })
 
-  test('a ghost color is its piece color 55% of the way from the dark well: #E59BC4 over #1E1E2E is #8B6381', () => {
-    // by hand: 30 + (229 - 30) * 0.55 = 139.45, 30 + (155 - 30) * 0.55 = 98.75, 46 + (196 - 46) * 0.55 = 128.5
-    expect(Play.GHOST_COLORS.I).toBe('#8B6381')
+  test('a ghost color is its piece color 55% of the way from the dark well: #EE5588 over #1E1E2E is #903C60', () => {
+    // by hand: 30 + (238 - 30) * 0.55 = 144.4, 30 + (85 - 30) * 0.55 = 60.25, 46 + (136 - 46) * 0.55 = 95.5
+    expect(Play.PIECE_COLORS.I).toBe('#EE5588')
+    expect(Play.GHOST_COLORS.I).toBe('#903C60')
     for (const kind of ['I', 'O', 'T', 'S', 'Z', 'J', 'L'] as const) {
-      const ghost = Number.parseInt(String(Play.GHOST_COLORS[kind]).slice(1), 16)
-      const piece = Number.parseInt(String(Play.PIECE_COLORS[kind]).slice(1), 16)
-      const channels = (value: number) => [value >> 16, (value >> 8) & 255, value & 255]
-      const [lit, dark] = [channels(piece), channels(ghost)]
-      expect(dark.every((channel, at) => channel < lit[at]!), kind).toBe(true)
+      const brightness = ([r, g, b]: Rgb) => 0.2126 * r + 0.7152 * g + 0.0722 * b
+      expect(brightness(rgbOf(String(Play.GHOST_COLORS[kind]))), kind).toBeLessThan(brightness(rgbOf(String(Play.PIECE_COLORS[kind]))) * 0.75)
     }
-    expect(new Set(Object.values(Play.GHOST_COLORS)).size).toBe(7)
   })
 
   test('a held piece keeps its color after a hold; the box says used and its frame goes quiet until the next piece', () => {
@@ -295,10 +306,27 @@ describe('the look', () => {
     expect(frame(locked)).toBe(Play.COLORS.frame)
   })
 
-  test('seven distinct piece colors of its own, none a pure primary or secondary', () => {
-    const colors = Object.values(Play.PIECE_COLORS).map(color => String(color).toUpperCase())
-    expect(new Set(colors).size).toBe(7)
-    const pure = ['#00FFFF', '#FFFF00', '#800080', '#00FF00', '#FF0000', '#0000FF', '#FF7F00', '#FFA500']
-    expect(colors.filter(color => pure.includes(color))).toEqual([])
+  test('every piece and every ghost keeps its own color on a 256-color terminal', () => {
+    const codes = (colors: Readonly<Record<string, unknown>>) => Object.values(colors).map(color => ansi256(rgbOf(String(color))))
+    expect(new Set(codes(Play.PIECE_COLORS)).size).toBe(7)
+    expect(new Set(codes(Play.GHOST_COLORS)).size).toBe(7)
+  })
+
+  test('the seven piece colors stay apart for normal vision and the three color vision deficiencies', () => {
+    // CIEDE2000 of 2 is the smallest difference noticed side by side; 12 is told apart at a glance
+    const colors = Object.fromEntries(Object.entries(Play.PIECE_COLORS).map(([kind, color]) => [kind, String(color)]))
+    for (const vision of ['normal', 'protan', 'deutan', 'tritan'] as const) {
+      const { distance, pair } = closestPair(colors, vision)
+      expect(distance, `${vision}: ${pair}`).toBeGreaterThanOrEqual(12)
+    }
+  })
+
+  test('the colors are the game\'s own: no piece wears the hue the common convention gives it', () => {
+    // the convention: I cyan, O yellow, T purple, S green, Z red, J blue, L orange, as hue angles
+    const convention = { I: 180, O: 60, T: 285, S: 120, Z: 0, J: 225, L: 30 } as const
+    for (const [kind, angle] of Object.entries(convention)) {
+      const away = Math.abs(((hueOf(rgbOf(String(Play.PIECE_COLORS[kind as keyof typeof convention]))) - angle + 540) % 360) - 180)
+      expect(away, kind).toBeGreaterThan(30)
+    }
   })
 })
