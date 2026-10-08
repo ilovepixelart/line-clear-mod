@@ -82,9 +82,16 @@ function refilled(queue: readonly Kind[], random: number): { queue: Kind[]; rand
 
 const isResting = (board: Board, piece: Piece) => !fits(board, { ...piece, y: piece.y + 1 })
 
-/** The game with `kind` entering at its spawn position at time `at`. */
+function ended(state: GameState, over: 'block-out' | 'lock-out'): GameState {
+  return { ...state, active: null, phase: 'over', over, lockAt: null }
+}
+
+/** The game with `kind` entering at its spawn position at time `at`, or over when there is no room. */
 function spawned(state: GameState, kind: Kind, at: number): GameState {
   const piece = spawnPiece(kind)
+  if (!fits(state.board, piece)) {
+    return ended(state, 'block-out')
+  }
 
   return {
     ...state,
@@ -107,6 +114,9 @@ function nextPiece(state: GameState, at: number): GameState {
 /** The falling piece locked into the board at time `at`: rows cleared, scored, and the next piece on. */
 function locked(state: GameState, at: number): GameState {
   const piece = state.active!
+  if (pieceCells(piece).every(({ y }) => y < HIDDEN_ROWS)) {
+    return ended({ ...state, board: placed(state.board, piece) }, 'lock-out')
+  }
   const { board, cleared } = clearedRows(placed(state.board, piece))
   const lines = state.lines + cleared
 
