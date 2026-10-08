@@ -29,10 +29,17 @@ describe('keys on the clicked game region', () => {
     ])
   })
 
-  test('a shifted letter is the same control', () => {
-    expect(Play.inputsOfKey({ key: 'A', shift: true })).toEqual(['left'])
+  test('a shifted letter is the same control, except A and D, which slide to the wall', () => {
     expect(Play.inputsOfKey({ key: 'X', shift: true })).toEqual(['hardDrop'])
     expect(Play.inputsOfKey({ key: 'Z', shift: true })).toEqual(['rotateCcw'])
+    expect(Play.inputsOfKey({ key: 'A', shift: true })).toEqual(['slideLeft'])
+    expect(Play.inputsOfKey({ key: 'D', shift: true })).toEqual(['slideRight'])
+    expect(Play.inputsOfKey({ key: 'Aa' })).toEqual(['slideLeft', 'left'])
+  })
+
+  test('shift with left or right slides to the wall', () => {
+    expect(Play.inputsOfKey({ key: 'left', shift: true })).toEqual(['slideLeft'])
+    expect(Play.inputsOfKey({ key: 'right', shift: true })).toEqual(['slideRight'])
   })
 
   test('a burst that arrives as one event is split into its keys, in order', () => {

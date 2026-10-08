@@ -18,7 +18,7 @@ import {
 import type { Kind, Point } from './types'
 
 /** One thing that happens to a game: a press, or a tick that only lets time pass. */
-export type Input = 'tick' | 'left' | 'right' | 'softDrop' | 'hardDrop' | 'rotateCw' | 'rotateCcw' | 'hold' | 'pause'
+export type Input = 'tick' | 'left' | 'right' | 'slideLeft' | 'slideRight' | 'softDrop' | 'hardDrop' | 'rotateCw' | 'rotateCcw' | 'hold' | 'pause'
 
 export type Phase = 'playing' | 'paused' | 'over'
 
@@ -255,6 +255,17 @@ function pressed(state: GameState, input: 'left' | 'right' | 'rotateCw' | 'rotat
   return moved === null ? state : movedTo(state, moved, now, true)
 }
 
+/** The game after a slide: the piece moved left or right as far as it goes, as one move. The same game when it cannot move. */
+function slid(state: GameState, input: 'slideLeft' | 'slideRight', now: number): GameState {
+  const dx = input === 'slideLeft' ? -1 : 1
+  let piece = state.active!
+  for (let next = shifted(state.board, piece, dx, 0); next !== null; next = shifted(state.board, next, dx, 0)) {
+    piece = next
+  }
+
+  return piece === state.active ? state : movedTo(state, piece, now, true)
+}
+
 /** The game after a hold: the falling piece is kept and the held one (or the next) enters. Once per piece. */
 function held(state: GameState, now: number): GameState {
   if (!state.canHold) {
@@ -273,6 +284,9 @@ function applied(state: GameState, input: Input, now: number): GameState {
     case 'rotateCw':
     case 'rotateCcw':
       return pressed(state, input, now)
+    case 'slideLeft':
+    case 'slideRight':
+      return slid(state, input, now)
     case 'softDrop':
       return softDropped(state, now)
     case 'hardDrop':

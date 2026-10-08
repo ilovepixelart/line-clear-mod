@@ -43,11 +43,15 @@ const NAMED = new Set([
 
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/
 
-/** One key's input: a named key, or a letter in either case; undefined for every other key. */
-function inputOfOne(key: string): Input | undefined {
-  const lower = key.toLowerCase()
+/** Shifted, these slide to the wall instead of moving one column: shift with an arrow, or a capital A or D. */
+const SLIDES: Readonly<Record<string, Input>> = { left: 'slideLeft', right: 'slideRight', A: 'slideLeft', D: 'slideRight' }
 
-  return REGION_KEYS[key] ?? REGION_KEYS[lower] ?? LETTERS[lower]
+/** One key's input: a named key, or a letter in either case; undefined for every other key. */
+function inputOfOne(key: string, isShifted = false): Input | undefined {
+  const lower = key.toLowerCase()
+  const slide = isShifted || key !== lower ? SLIDES[key] : undefined
+
+  return slide ?? REGION_KEYS[key] ?? REGION_KEYS[lower] ?? LETTERS[lower]
 }
 
 /**
@@ -64,7 +68,7 @@ export function inputsOfKey(event: ClientKeyEvent): Input[] {
   }
   const keys = NAMED.has(event.key) ? [event.key] : [...event.key]
 
-  return keys.flatMap(key => inputOfOne(key) ?? [])
+  return keys.flatMap(key => inputOfOne(key, event.shift === true) ?? [])
 }
 
 /**
@@ -98,7 +102,7 @@ export function pressesOf(event: ClientKeyEvent, last: LastKey, now: number): { 
   let previous = last
   const inputs: Input[] = []
   for (const key of keys) {
-    const one = pressOf(key, inputOfOne(key), previous, now)
+    const one = pressOf(key, inputOfOne(key, event.shift === true), previous, now)
     inputs.push(...(one.input === undefined ? [] : [one.input]))
     previous = one.last
   }

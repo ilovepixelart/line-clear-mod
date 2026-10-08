@@ -23,6 +23,7 @@ There are two ways to give the game the keys.
 | Move | Clicked well | Pane hotkey |
 | --- | --- | --- |
 | left, right | left, right arrow, or `a`, `d` | `a`, `d` |
+| slide to the wall | shift with left or right, or `A`, `D` | |
 | turn clockwise | up arrow or `w` | `w` |
 | turn back | `z` or `q` | `q` |
 | soft drop | down arrow or `s` | `s` |

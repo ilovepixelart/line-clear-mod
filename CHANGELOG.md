@@ -41,6 +41,8 @@ release may change behaviour.
 - A held key acts once for a drop, a turn, hold and pause, and keeps
   repeating for left, right and down: a key that comes again within 120 ms
   is a held key's repeat.
+- Slide to the wall in one move: shift with left or right, or `A` and `D`,
+  on the clicked well.
 - The best score is kept across sessions, the only value stored.
 - `openOnTurn` setting, off by default: opens the pane, unfocused, when a
   turn starts.

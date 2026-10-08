@@ -76,6 +76,27 @@ describe('entering', () => {
 })
 
 describe('moving and turning', () => {
+  test('a slide moves the piece as far as it goes in one move: to the wall, or against the stack', () => {
+    const game = gameWith('O')
+    expect(where(play(game, ['slideLeft']))).toEqual({ rotation: 0, x: -1, y: 2 })
+    expect(where(play(game, ['slideRight']))).toEqual({ rotation: 0, x: 7, y: 2 })
+    // a column at 1 in the O's rows stops it at columns 2 and 3
+    const post = Game.emptyBoard().map((row, y) => row.map((cell, x) => (x === 1 && (y === 2 || y === 3) ? 'Z' : cell)))
+    expect(where(play(gameWith('O', post), ['slideLeft']))).toEqual({ rotation: 0, x: 1, y: 2 })
+  })
+
+  test('a slide on the stack spends one lock reset, however far it goes', () => {
+    const resting = play(gameWith('O'), times(18, 'softDrop'))
+    const slid = Game.step(resting, 'slideLeft', 10)
+    expect(where(slid)).toEqual({ rotation: 0, x: -1, y: 20 })
+    expect(slid.lockResets).toBe(resting.lockResets + 1)
+  })
+
+  test('a slide against the wall already does nothing', () => {
+    const atWall = play(gameWith('O'), ['slideLeft'])
+    expect(Game.step(atWall, 'slideLeft', 0)).toBe(atWall)
+  })
+
   test('left and right move one column; the wall stops the piece where it is', () => {
     const game = gameWith('O')
     expect(where(play(game, ['left']))).toEqual({ rotation: 0, x: 2, y: 2 })
