@@ -125,13 +125,13 @@ describe('the game region at 80 and 120 columns', () => {
     expect(texts(toppedOut(midGame()), AWAY, 80)).toEqual([
     "                 hold        ╭────────────────────╮  next",
     "                 ╭────────╮  │· · · · · ██· · · · │  ╭────────╮",
-    "                 │  ██    │  │· · · ██████· · · · │  │  ████  │",
-    "                 │██████  │  │· · · ████████· · · │  │████    │",
+    "                 │  ██    │  │· · · ██████· · · · │  │        │",
+    "                 │██████  │  │· · · ████████· · · │  │        │",
     "                 ╰────────╯  │· · · ██· · · · · · │  │        │",
-    "                             │· · · ██████· · · · │  │████    │",
-    "                 score       │· · · · ████· · · · │  │  ████  │",
+    "                             │· · · ██████· · · · │  │        │",
+    "                 score       │· · · · ████· · · · │  │        │",
     "                 170         │                    │  │        │",
-    "                             │    ✧ new best ✧    │  │████████│",
+    "                             │    ✧ new best ✧    │  │        │",
     "                 level       │     score 170      │  │        │",
     "                 1           │                    │  ╰────────╯",
     "                             │click to play again │",
@@ -228,6 +228,14 @@ describe('who has the keys, on the status line and the card', () => {
     expect(label({ ...mid, bestBefore: 1_000 })).toBe('best')
     expect(label({ ...mid, bestBefore: 10 })).toBe('best  new!')
     expect(label({ ...mid, bestBefore: mid.game!.score })).toBe('best')
+  })
+
+  test('at game over the next box is empty and no piece is falling', () => {
+    const over = toppedOut(midGame())
+    expect(over.game!.active).toBeNull()
+    const nextColumns = (play: PlayState) => Play.screenOf(play, AWAY, 80).slice(1, 12).map(line => Play.textOf(line).slice(53, 61))
+    expect(nextColumns(midGame()).some(text => text.includes(Play.CELL)), 'in play the next box shows pieces').toBe(true)
+    expect(nextColumns(over).every(text => !text.includes(Play.CELL))).toBe(true)
   })
 
   test('paused, the whole board stays in view, dimmed, and the status line says how to resume', () => {

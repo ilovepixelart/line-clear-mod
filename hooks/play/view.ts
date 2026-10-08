@@ -108,9 +108,9 @@ function holdPanel(play: Play, best: number): Line[] {
   ]
 }
 
-/** The next three pieces, PANEL wide. */
+/** The next three pieces, PANEL wide; none once the game is over. */
 function nextPanel(game: GameState | null): Line[] {
-  const next = game === null ? [] : Game.nextOf(game)
+  const next = game === null || game.phase === 'over' ? [] : Game.nextOf(game)
   const blank: Line = [plain(' '.repeat(8))]
   const pieces = [0, 1, 2].flatMap(at => [...miniPiece(next[at] ?? null), ...(at < 2 ? [blank] : [])])
 
