@@ -8,6 +8,38 @@ row and it clears. The game is its own design, with its own look.
 Status: in development. The game engine is written and tested; the pane that
 plays it is not built yet, so installing the plugin today shows nothing.
 
+## The rules
+
+The engine in [`hooks/game/`](hooks/game) is pure: no clock, no randomness,
+no I/O. `newGame(seed, options)` starts a game and
+`step(state, input, nowMs)` returns the next one, applying the time first
+(gravity rows and locks due by `nowMs`) and then the input. The same seed and
+inputs always replay the same game.
+
+- **Well.** 10 columns by 20 visible rows, with 4 hidden rows above where
+  pieces enter.
+- **Pieces.** Seven four-cell pieces, dealt from a 7-bag (each run of seven
+  holds one of each) shuffled by a seeded generator. The next three are shown.
+- **Turning.** Super Rotation System states and wall kicks, from its published
+  kick table ([`hooks/game/pieces.ts`](hooks/game/pieces.ts)). The square
+  never kicks.
+- **Hold.** Once per piece; allowed again when a piece locks.
+- **Gravity.** `(0.8 - (level - 1) * 0.007) ^ (level - 1)` seconds a row:
+  1000 ms at level 1, 355 ms at level 5, 64 ms at level 10, and no faster than
+  level 15's 7 ms.
+- **Lock delay.** A resting piece locks after 500 ms. Each of the first 15
+  moves or turns made while resting restarts the delay, and the 16th locks the
+  piece at once; reaching a new lowest row restores all 15.
+- **Score.** A lock that clears 1, 2, 3 or 4 rows scores 100, 300, 500 or 800
+  times the level it was made at. A soft drop scores 1 a row, a hard drop 2.
+  No combo, back-to-back or spin bonuses.
+- **Levels.** Up one every 10 cleared rows from the start level.
+- **Game over.** Block out (the next piece has no room to enter) or lock out
+  (a piece locks with every cell in the hidden rows).
+- **Pause.** Freezes gravity and the lock delay; ignores every other input.
+
+The numbers live in [`hooks/game/rules.ts`](hooks/game/rules.ts).
+
 ## Install
 
 Requires Claude Code 2.1.287 or later (mods).

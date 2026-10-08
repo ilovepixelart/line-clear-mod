@@ -10,3 +10,9 @@ release may change behaviour.
 
 - The plugin scaffold: manifest, marketplace file and a hooks module that
   registers nothing yet.
+- The game engine, pure and seeded: `newGame(seed, options)`,
+  `step(state, input, nowMs)` and selectors for the visible board, ghost,
+  next three, hold, score, level and lines. Seven pieces from a 7-bag,
+  Super Rotation System turns and kicks, hold, gravity by level, a 500 ms
+  lock delay with 15 resets, scoring for one to four rows, a level every 10
+  rows, block out and lock out, and pause. Nothing plays it yet.
