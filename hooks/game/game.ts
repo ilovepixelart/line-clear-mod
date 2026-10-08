@@ -198,6 +198,17 @@ function pressed(state: GameState, input: 'left' | 'right' | 'rotateCw' | 'rotat
   return moved === null ? state : movedTo(state, moved, now, true)
 }
 
+/** The game after a hold: the falling piece is kept and the held one (or the next) enters. Once per piece. */
+function held(state: GameState, now: number): GameState {
+  if (!state.canHold) {
+    return state
+  }
+  const keeping = { ...state, hold: state.active!.kind }
+  const swapped = state.hold === null ? nextPiece(keeping, now) : spawned(keeping, state.hold, now)
+
+  return { ...swapped, canHold: false }
+}
+
 function applied(state: GameState, input: Input, now: number): GameState {
   switch (input) {
     case 'left':
@@ -209,6 +220,8 @@ function applied(state: GameState, input: Input, now: number): GameState {
       return softDropped(state, now)
     case 'hardDrop':
       return hardDropped(state, now)
+    case 'hold':
+      return held(state, now)
     default:
       return state
   }
