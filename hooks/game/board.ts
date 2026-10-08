@@ -4,7 +4,7 @@ import type { Kind } from './types'
 export const WIDTH = 10
 
 /** Rows the person sees. */
-export const VISIBLE_ROWS = 20
+export const VISIBLE_ROWS = 18
 
 /** Rows above the visible ones, where pieces spawn: row 0 is the top hidden row. */
 export const HIDDEN_ROWS = 4

@@ -1,5 +1,6 @@
 import { describe, expect, test, tier } from 'claude-code/testing'
 
+import Game from '../../hooks/game'
 import Play from '../../hooks/play'
 import type { Play as PlayState } from '../../hooks/play'
 import { boardFrom } from '../fixtures/board'
@@ -33,7 +34,7 @@ function frames(play: PlayState, count: number): PlayState {
 const screen = (play: PlayState) => Play.screenOf(play, AWAY, Play.GAME_COLUMNS)
 const WELL_AT = 12
 /** The well's inner text, visible row by visible row. */
-const wellRows = (play: PlayState) => screen(play).slice(1, 21).map(line => Play.textOf(line).slice(WELL_AT + 1, WELL_AT + 21))
+const wellRows = (play: PlayState) => screen(play).slice(1, 1 + Game.VISIBLE_ROWS).map(line => Play.textOf(line).slice(WELL_AT + 1, WELL_AT + 21))
 const wellTop = (play: PlayState) => Play.textOf(screen(play)[0]!).slice(WELL_AT, WELL_AT + 22)
 const litSegments = (play: PlayState) => screen(play).flat().filter(segment => segment.color === Play.COLORS.flash)
 
@@ -43,7 +44,7 @@ describe('a line clear on the frame clock', () => {
   test('the cleared rows light up whole, then empty from the middle out, a pair of columns a frame', () => {
     const play = cleared(2)
     expect(play.game!.lines).toBe(2)
-    const bottom = (at: number) => wellRows(frames(play, at)).slice(16)
+    const bottom = (at: number) => wellRows(frames(play, at)).slice(-4)
     expect(bottom(0)).toEqual([I_LEFT, I_LEFT, '████████████████████', '████████████████████'])
     expect(bottom(1).slice(2)).toEqual(['████████· · ████████', '████████· · ████████'])
     expect(bottom(2).slice(2)).toEqual(['██████· · · · ██████', '██████· · · · ██████'])
@@ -55,8 +56,8 @@ describe('a line clear on the frame clock', () => {
   test('after five frames (250 ms) the well shows the rows gone and what was above them fallen', () => {
     const after = frames(cleared(2), 5)
     // column 9 holds the rest of the I; the next piece's ghost may lie elsewhere on these rows
-    expect(wellRows(after).slice(16).map(row => row.slice(-2))).toEqual(['· ', '· ', '██', '██'])
-    expect(wellRows(after).slice(16).every(row => !row.includes(Play.CELL.repeat(2)))).toBe(true)
+    expect(wellRows(after).slice(-4).map(row => row.slice(-2))).toEqual(['· ', '· ', '██', '██'])
+    expect(wellRows(after).slice(-4).every(row => !row.includes(Play.CELL.repeat(2)))).toBe(true)
     expect(litSegments(after)).toEqual([])
   })
 
@@ -70,7 +71,7 @@ describe('a line clear on the frame clock', () => {
   test('the next lock ends the flash: a drop mid-flash shows the board as it is', () => {
     const next = Play.keyed(frames(cleared(2), 1), { key: 'x' }, AWAY)
     expect(litSegments(next)).toEqual([])
-    expect(wellRows(next).slice(18)).not.toContain('████████████████████')
+    expect(wellRows(next).slice(-2)).not.toContain('████████████████████')
     expect(screen(next).flat().some(segment => segment.text.includes(Play.GHOST)), 'the ghost is back').toBe(true)
   })
 

@@ -25,7 +25,7 @@ describe('opening the pane', () => {
     await $.session.start(SESSION)
     const result = await $.command.run(COMMAND)
 
-    expect(opened).toEqual([{ id: PANE, title: 'line-clear', rows: 25, columns: 50 }])
+    expect(opened).toEqual([{ id: PANE, title: 'line-clear', rows: 23, columns: 50 }])
     expect(result.text).toBeUndefined()
   })
 
@@ -265,13 +265,13 @@ describe('the region at 80 and 120 columns', () => {
     inSession(on)
     for (const columns of [80, 120]) {
       const ui = await mounted($, 80)
-      await ui.resize({ columns, rows: 25, in: 'well' })
+      await ui.resize({ columns, rows: 23, in: 'well' })
       await ui.pointer(CLICK)
       await ui.key({ key: 'aac' })
       const lines = await wellLines(ui)
       const margin = Math.floor((columns - 46) / 2)
 
-      expect(lines.length, `${columns}`).toBe(23)
+      expect(lines.length, `${columns}`).toBe(21)
       expect(lines[0], `${columns}`).toBe(`${' '.repeat(margin)}hold  used  ╭────────────────────╮  next`)
       expect(lines.filter(line => line.length > columns), `${columns}`).toEqual([])
       await ui.unmount()

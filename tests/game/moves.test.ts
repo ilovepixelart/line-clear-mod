@@ -48,8 +48,8 @@ describe('shifting and dropping', () => {
   })
 
   test('drop distance counts the empty rows under the piece', () => {
-    expect(Game.dropDistance(EMPTY, piece('O', 0, 3, 2)), 'rows 2 and 3 down to rows 22 and 23').toBe(20)
-    expect(Game.dropDistance(boardFrom('....#.....', '....#.....'), piece('O', 0, 3, 2))).toBe(18)
+    expect(Game.dropDistance(EMPTY, piece('O', 0, 3, 2)), 'rows 2 and 3 down to rows 20 and 21').toBe(18)
+    expect(Game.dropDistance(boardFrom('....#.....', '....#.....'), piece('O', 0, 3, 2))).toBe(16)
     expect(Game.dropDistance(EMPTY, piece('O', 0, 3, BOTTOM - 1)), 'already on the floor').toBe(0)
   })
 })
@@ -141,13 +141,13 @@ describe('locking and clearing', () => {
     expect(bottomRows(EMPTY, 1), 'the board placed on is unchanged').toEqual(['..........'])
   })
 
-  // the rows are the board's own, 24 deep: the bottom row is 23
+  // the rows are the board's own, 22 deep: the bottom row is 21
   const cases: [string, string[], number, number[], string[]][] = [
     ['no full row clears nothing', ['#########.'], 0, [], ['#########.']],
-    ['one full row', ['#.........', '##########'], 1, [23], ['..........', '#.........']],
-    ['two full rows with a partial one between keeps the partial one', ['##########', '#.#.#.#.#.', '##########'], 2, [21, 23], ['..........', '..........', '#.#.#.#.#.']],
-    ['three full rows', ['.........#', '##########', '##########', '##########'], 3, [21, 22, 23], ['..........', '..........', '..........', '.........#']],
-    ['four full rows', ['##########', '##########', '##########', '##########'], 4, [20, 21, 22, 23], ['..........', '..........', '..........', '..........']],
+    ['one full row', ['#.........', '##########'], 1, [21], ['..........', '#.........']],
+    ['two full rows with a partial one between keeps the partial one', ['##########', '#.#.#.#.#.', '##########'], 2, [19, 21], ['..........', '..........', '#.#.#.#.#.']],
+    ['three full rows', ['.........#', '##########', '##########', '##########'], 3, [19, 20, 21], ['..........', '..........', '..........', '.........#']],
+    ['four full rows', ['##########', '##########', '##########', '##########'], 4, [18, 19, 20, 21], ['..........', '..........', '..........', '..........']],
   ]
   for (const [name, rows, cleared, at, after] of cases) {
     test(`clearing: ${name}`, () => {

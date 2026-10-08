@@ -10,9 +10,9 @@ tier('user')
 /** Columns 3 to 6 filled from row 2 (hidden) to the floor: every kind's spawn cells are taken. */
 const spawnBlocked: Board = Game.emptyBoard().map((row, y) => row.map((cell, x) => (y >= 2 && x >= 3 && x <= 6 ? 'Z' : cell)))
 /** Columns 0 and 1 filled up to the top visible row (row 4). */
-const towerToTop = boardFrom(...times(20, 'tick').map(() => '##........'))
+const towerToTop = boardFrom(...times(18, 'tick').map(() => '##........'))
 /** Columns 0 and 1 filled up to row 5, one below the top visible row. */
-const towerBelowTop = boardFrom(...times(19, 'tick').map(() => '##........'))
+const towerBelowTop = boardFrom(...times(17, 'tick').map(() => '##........'))
 
 /** An O in columns 8 and 9 at the spawn rows, clear of the spawn area. */
 const oAtRight = (board: Board) => gameWith('O', board, { active: { kind: 'O', rotation: 0, x: 7, y: 2 } })
@@ -28,7 +28,7 @@ describe('game over', () => {
     const over = play(oAtRight(spawnBlocked), ['hardDrop'])
     isOver(over, 'block-out')
     expect(bottomRows(over.board, 2), 'the O that was dropped stays locked').toEqual(['...####.##', '...####.##'])
-    expect(Game.scoreOf(over), 'the drop still scores').toBe(40)
+    expect(Game.scoreOf(over), 'the drop still scores').toBe(36)
   })
 
   test('block out: a hold whose piece has no room to enter', () => {

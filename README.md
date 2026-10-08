@@ -62,7 +62,7 @@ pressing keys. Press Escape once to leave the game, and do not Tab around the
 focused pane mid-turn: Tab can move the focus onto Claude Code's own stop
 control, where Escape may cancel the turn.
 
-The pane needs 46 columns and 25 rows. Below 46 columns it asks for room.
+The pane needs 46 columns and 23 rows. Below 46 columns it asks for room.
 
 ## Settings
 
@@ -88,7 +88,7 @@ no I/O. `newGame(seed, options)` starts a game and
 (gravity rows and locks due by `nowMs`) and then the input. The same seed and
 inputs always replay the same game.
 
-- **Well.** 10 columns by 20 visible rows, with 4 hidden rows above where
+- **Well.** 10 columns by 18 visible rows, with 4 hidden rows above where
   pieces enter.
 - **Pieces.** Seven four-cell pieces, dealt from a 7-bag (each run of seven
   holds one of each) shuffled by a seeded generator. The next three are shown.

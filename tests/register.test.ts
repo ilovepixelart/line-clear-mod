@@ -44,6 +44,6 @@ describe('the openOnTurn setting', () => {
     await $.session.start(SESSION)
 
     expect(await $.turn.start(TURN)).toEqual({ turnId: 't1' })
-    expect(opened).toEqual([{ id: PANE, title: 'line-clear', rows: 25, columns: 50 }])
+    expect(opened).toEqual([{ id: PANE, title: 'line-clear', rows: 23, columns: 50 }])
   })
 })

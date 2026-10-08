@@ -21,7 +21,7 @@ describe('a new game', () => {
     expect(Game.levelOf(game)).toBe(1)
     expect(Game.phaseOf(game)).toBe('playing')
     expect(Game.holdOf(game)).toEqual({ kind: null, canHold: true })
-    expect(Game.boardOf(game)).toHaveLength(20)
+    expect(Game.boardOf(game)).toHaveLength(18)
     expect(drawn(game).every(row => row === '..........'), 'the piece spawns above the visible rows').toBe(true)
   })
 
@@ -90,11 +90,11 @@ describe('gravity', () => {
 
   test('a piece that slides off a ledge starts gravity from the slide, not from its last fall', () => {
     // the O rests on a ledge in columns 0 to 3 from time 0, and at 400 ms slides off it
-    const resting = play(gameWith('O', boardFrom('####......')), ['left', ...times(19, 'softDrop')])
+    const resting = play(gameWith('O', boardFrom('####......')), ['left', ...times(17, 'softDrop')])
     const slid = play(resting, ['right', 'right'], 400)
-    expect(where(slid)).toEqual({ rotation: 0, x: 4, y: 21 })
-    expect(where(Game.step(slid, 'tick', 1399))?.y).toBe(21)
-    expect(where(Game.step(slid, 'tick', 1400))?.y).toBe(22)
+    expect(where(slid)).toEqual({ rotation: 0, x: 4, y: 19 })
+    expect(where(Game.step(slid, 'tick', 1399))?.y).toBe(19)
+    expect(where(Game.step(slid, 'tick', 1400))?.y).toBe(20)
   })
 
   test('time passes before the input: a move at 1000 ms happens after the row falls', () => {
@@ -115,17 +115,17 @@ describe('drops', () => {
     const game = gameWith('T')
     const next = game.queue.slice(0, 4)
     const dropped = play(game, ['hardDrop'])
-    // T spawns in rows 2 and 3 and falls 20 rows to rows 22 and 23 (visible 18 and 19)
+    // T spawns in rows 2 and 3 and falls 18 rows to rows 20 and 21 (visible 16 and 17)
     expect(lastRows(dropped, 2)).toEqual(['....#.....', '...###....'])
-    expect(Game.scoreOf(dropped)).toBe(40)
+    expect(Game.scoreOf(dropped)).toBe(36)
     expect(dropped.active?.kind).toBe(next[0])
     expect(Game.nextOf(dropped)).toEqual(next.slice(1, 4))
   })
 
   test('the ghost shows where a hard drop would land, in visible rows', () => {
-    expect(keysOf(Game.ghostOf(gameWith('T')))).toEqual(keysOf([{ x: 4, y: 18 }, { x: 3, y: 19 }, { x: 4, y: 19 }, { x: 5, y: 19 }]))
+    expect(keysOf(Game.ghostOf(gameWith('T')))).toEqual(keysOf([{ x: 4, y: 16 }, { x: 3, y: 17 }, { x: 4, y: 17 }, { x: 5, y: 17 }]))
     const onStack = gameWith('O', boardFrom('....#.....'))
-    expect(keysOf(Game.ghostOf(onStack))).toEqual(keysOf([{ x: 4, y: 17 }, { x: 5, y: 17 }, { x: 4, y: 18 }, { x: 5, y: 18 }]))
+    expect(keysOf(Game.ghostOf(onStack))).toEqual(keysOf([{ x: 4, y: 15 }, { x: 5, y: 15 }, { x: 4, y: 16 }, { x: 5, y: 16 }]))
   })
 
   test('the falling piece is drawn on the visible board once it is in view', () => {
@@ -135,26 +135,26 @@ describe('drops', () => {
 })
 
 describe('lock delay', () => {
-  // An O soft-dropped to the floor at time 0: rows 22 and 23, resting.
-  const resting = () => play(gameWith('O'), times(20, 'softDrop'))
+  // An O soft-dropped to the floor at time 0: rows 20 and 21, resting.
+  const resting = () => play(gameWith('O'), times(18, 'softDrop'))
   /** The bottom row of locked cells: the falling piece is not in it. */
   const lockedFloor = (state: GameState) => bottomRows(state.board, 1)[0]
 
   test('a resting piece locks 500 ms after it lands, not before', () => {
-    expect(where(resting())?.y).toBe(22)
+    expect(where(resting())?.y).toBe(20)
     expect(lockedFloor(Game.step(resting(), 'tick', 499))).toBe('..........')
     expect(lockedFloor(Game.step(resting(), 'tick', 500))).toBe('....##....')
   })
 
   test('a soft drop on the floor does nothing: no points, no lock', () => {
     const pressed = Game.step(resting(), 'softDrop', 100)
-    expect(Game.scoreOf(pressed)).toBe(20)
+    expect(Game.scoreOf(pressed)).toBe(18)
     expect(lockedFloor(pressed)).toBe('..........')
   })
 
   test('a move while resting restarts the delay', () => {
     const moved = Game.step(resting(), 'left', 300)
-    expect(where(Game.step(moved, 'tick', 799))).toEqual({ rotation: 0, x: 2, y: 22 })
+    expect(where(Game.step(moved, 'tick', 799))).toEqual({ rotation: 0, x: 2, y: 20 })
     expect(lockedFloor(Game.step(moved, 'tick', 800))).toBe('...##.....')
   })
 
@@ -164,14 +164,14 @@ describe('lock delay', () => {
       game = Game.step(game, i % 2 === 1 ? 'left' : 'right', i * 10)
     }
     // the 15th move (a left, at 150 ms) leaves the O in columns 3 and 4
-    expect(where(Game.step(game, 'tick', 649))).toEqual({ rotation: 0, x: 2, y: 22 })
+    expect(where(Game.step(game, 'tick', 649))).toEqual({ rotation: 0, x: 2, y: 20 })
     expect(lockedFloor(Game.step(game, 'tick', 650))).toBe('...##.....')
     expect(lockedFloor(Game.step(game, 'right', 160)), 'locked where the 16th move put it').toBe('....##....')
   })
 
   test('moves while falling spend no resets: a piece that lands after 18 of them still gets its delay', () => {
     // a tower in columns 0 and 1 up to the top visible row; the O slides onto it without falling a row
-    const tower = boardFrom(...times(20, 'tick').map(() => '##........'))
+    const tower = boardFrom(...times(18, 'tick').map(() => '##........'))
     let game = play(gameWith('O', tower), times(16, 'tick').flatMap((_, i) => (i % 2 === 0 ? ['right'] : ['left'])))
     game = play(game, ['left', 'left', 'left'])
     expect(where(game), 'resting on the tower, not locked').toEqual({ rotation: 0, x: 0, y: 2 })
@@ -180,19 +180,19 @@ describe('lock delay', () => {
 
   test('reaching a new lowest row gives the piece its 15 moves back', () => {
     // a ledge in columns 0 to 3: the O rests on it in columns 3 and 4, one row up
-    let game = play(gameWith('O', boardFrom('####......')), ['left', ...times(19, 'softDrop')])
-    expect(where(game)).toEqual({ rotation: 0, x: 2, y: 21 })
+    let game = play(gameWith('O', boardFrom('####......')), ['left', ...times(17, 'softDrop')])
+    expect(where(game)).toEqual({ rotation: 0, x: 2, y: 19 })
     for (let i = 1; i <= 14; i++) {
       game = Game.step(game, i % 2 === 1 ? 'left' : 'right', i)
     }
     // the 15th counted move takes it off the ledge at 20 ms, one more clears it, and gravity lands it 1000 ms later
     game = play(game, ['right', 'right'], 20)
     game = Game.step(game, 'tick', 1020)
-    expect(where(game)).toEqual({ rotation: 0, x: 4, y: 22 })
+    expect(where(game)).toEqual({ rotation: 0, x: 4, y: 20 })
     for (let i = 1; i <= 15; i++) {
       game = Game.step(game, i % 2 === 1 ? 'left' : 'right', 1020 + i)
     }
-    expect(where(game), 'still falling after 15 more moves').toEqual({ rotation: 0, x: 3, y: 22 })
+    expect(where(game), 'still falling after 15 more moves').toEqual({ rotation: 0, x: 3, y: 20 })
     expect(lockedFloor(game)).toBe('####......')
   })
 })
@@ -201,22 +201,22 @@ describe('line clears and scoring', () => {
   /** An I stood up and hard-dropped into the empty column 9 over `rows` rows of nine cells. */
   const fillWell = (rows: number, startLevel: number) => {
     const board = boardFrom(...times(rows, 'tick').map(() => '#########.'))
-    // the I stands up in column 5, four rights take it to column 9, and it falls 19 rows
+    // the I stands up in column 5, four rights take it to column 9, and it falls 17 rows
     return play(gameWith('I', board, { startLevel, level: startLevel }), ['rotateCw', ...times(4, 'right'), 'hardDrop'])
   }
 
-  test('at level 1 one to four rows clear for 100, 300, 500 and 800, plus 38 for the drop', () => {
-    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 1)))).toEqual([138, 338, 538, 838])
+  test('at level 1 one to four rows clear for 100, 300, 500 and 800, plus 34 for the drop', () => {
+    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 1)))).toEqual([134, 334, 534, 834])
     expect([1, 2, 3, 4].map(rows => Game.linesOf(fillWell(rows, 1)))).toEqual([1, 2, 3, 4])
   })
 
   test('at level 5 the clears score five times as much', () => {
-    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 5)))).toEqual([538, 1538, 2538, 4038])
+    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 5)))).toEqual([534, 1534, 2534, 4034])
   })
 
   test('the game records which board rows the last lock cleared, and none once a lock clears nothing', () => {
-    expect(fillWell(2, 1).lastClear).toEqual([22, 23])
-    expect(fillWell(4, 1).lastClear).toEqual([20, 21, 22, 23])
+    expect(fillWell(2, 1).lastClear).toEqual([20, 21])
+    expect(fillWell(4, 1).lastClear).toEqual([18, 19, 20, 21])
     expect(Game.newGame(7).lastClear).toEqual([])
     const after = play(fillWell(2, 1), ['hardDrop'])
     expect(Game.linesOf(after)).toBe(2)
@@ -233,8 +233,8 @@ describe('line clears and scoring', () => {
     const cleared = play(game, ['hardDrop'])
     expect(Game.linesOf(cleared)).toBe(10)
     expect(Game.levelOf(cleared)).toBe(2)
-    // a single at level 1 (100) and a 20-row hard drop (40)
-    expect(Game.scoreOf(cleared)).toBe(140)
+    // a single at level 1 (100) and an 18-row hard drop (36)
+    expect(Game.scoreOf(cleared)).toBe(136)
   })
 })
 

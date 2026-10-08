@@ -63,17 +63,15 @@ describe('the game region at 80 and 120 columns', () => {
     "                             │· · · · · · · · · · │  │        │",
     "                 score       │· · · · · · · · · · │  │        │",
     "                 0           │· · · · · · · · · · │  │        │",
-    "                             │· · · · · · · · · · │  │        │",
-    "                 level       │                    │  │        │",
-    "                 1           │   click to play    │  ╰────────╯",
-    "                             │                    │",
+    "                             │                    │  │        │",
+    "                 level       │   click to play    │  │        │",
+    "                 1           │                    │  ╰────────╯",
+    "                             │· · · · · · · · · · │",
     "                 lines       │· · · · · · · · · · │",
     "                 0           │· · · · · · · · · · │",
     "                             │· · · · · · · · · · │",
     "                 best        │· · · · · · · · · · │",
     "                 0           │· · · · · · · · · · │",
-    "                             │· · · · · · · · · · │",
-    "                             │· · · · · · · · · · │",
     "                             │· · · · · · · · · · │",
     "                             │· · · · · · · · · · │",
     "                             ╰────────────────────╯",
@@ -90,7 +88,7 @@ describe('the game region at 80 and 120 columns', () => {
     "                                     ╰────────╯  │· · · · · · · · · · │  │        │",
     "                                                 │· · · · · · · · · · │  │    ██  │",
     "                                     score       │· · · · · · · · · · │  │██████  │",
-    "                                     40          │· · · · · · · · · · │  │        │",
+    "                                     36          │· · · · · · · · · · │  │        │",
     "                                                 │· · · · · · · · · · │  │████████│",
     "                                     level       │· · · · · · · · · · │  │        │",
     "                                     1           │· · · · · · · · · · │  ╰────────╯",
@@ -98,10 +96,8 @@ describe('the game region at 80 and 120 columns', () => {
     "                                     lines       │· · · · · · · · · · │",
     "                                     0           │· · · · · · · · · · │",
     "                                                 │· · · · · · · · · · │",
-    "                                     best        │· · · · · · · · · · │",
-    "                                     5000        │· · · · · · · · · · │",
-    "                                                 │· · · ▓▓▓▓· · · · · │",
-    "                                                 │· · · · ▓▓▓▓· · · · │",
+    "                                     best        │· · · ▓▓▓▓· · · · · │",
+    "                                     5000        │· · · · ▓▓▓▓· · · · │",
     "                                                 │· · · · ████· · · · │",
     "                                                 │· · · ████· · · · · │",
     "                                                 ╰────────────────────╯",
@@ -112,24 +108,22 @@ describe('the game region at 80 and 120 columns', () => {
   test('game over, at 80: the card shows the final score and click to play again', () => {
     expect(texts(toppedOut(midGame()), AWAY, 80)).toEqual([
     "                 hold        ╭────────────────────╮  next",
-    "                 ╭────────╮  │· · · · ██· · · · · │  ╭────────╮",
-    "                 │  ██    │  │· · · ██████· · · · │  │████    │",
-    "                 │██████  │  │· · · · · ██· · · · │  │  ████  │",
-    "                 ╰────────╯  │· · · ██████· · · · │  │        │",
-    "                             │· · · ████████· · · │  │████████│",
-    "                 score       │· · · ██· · · · · · │  │        │",
-    "                 238         │· · · ██████· · · · │  │        │",
-    "                             │                    │  │  ████  │",
-    "                 level       │    ✧ new best ✧    │  │  ████  │",
-    "                 1           │     score 238      │  ╰────────╯",
-    "                             │                    │",
-    "                 lines       │click to play again │",
-    "                 0           │                    │",
+    "                 ╭────────╮  │· · · · · ██· · · · │  ╭────────╮",
+    "                 │  ██    │  │· · · ██████· · · · │  │  ████  │",
+    "                 │██████  │  │· · · ████████· · · │  │████    │",
+    "                 ╰────────╯  │· · · ██· · · · · · │  │        │",
+    "                             │· · · ██████· · · · │  │████    │",
+    "                 score       │· · · · ████· · · · │  │  ████  │",
+    "                 194         │                    │  │        │",
+    "                             │    ✧ new best ✧    │  │████████│",
+    "                 level       │     score 194      │  │        │",
+    "                 1           │                    │  ╰────────╯",
+    "                             │click to play again │",
+    "                 lines       │                    │",
+    "                 0           │· · · ██· · · · · · │",
     "                             │· · · ██████· · · · │",
-    "                 best  new!  │· · · ██· · · · · · │",
-    "                 238         │· · · ██████· · · · │",
-    "                             │· · · ████· · · · · │",
-    "                             │· · · · ████· · · · │",
+    "                 best  new!  │· · · ████· · · · · │",
+    "                 194         │· · · · ████· · · · │",
     "                             │· · · · ████· · · · │",
     "                             │· · · ████· · · · · │",
     "                             ╰────────────────────╯",
@@ -190,22 +184,22 @@ describe('who has the keys, on the status line and the card', () => {
   })
 
   test('a game that beats the best it started against ends on a gold card that says so, and by how much', () => {
-    const over = { ...toppedOut(midGame()), bestBefore: 200 }
+    const over = { ...toppedOut(midGame()), bestBefore: 150 }
     const score = over.game!.score
-    expect(score).toBe(238)
-    expect(cardOf(over, AWAY)).toEqual([Play.NEW_BEST[Math.floor(over.now / Play.TWINKLE_MS) % 2], 'score 238', 'up 38 on 200', 'click to play again'])
+    expect(score).toBe(194)
+    expect(cardOf(over, AWAY)).toEqual([Play.NEW_BEST[Math.floor(over.now / Play.TWINKLE_MS) % 2], 'score 194', 'up 44 on 150', 'click to play again'])
     const card = Play.screenOf(over, AWAY, 80).flat().filter(segment => segment.backgroundColor !== undefined)
     expect(card.every(segment => segment.backgroundColor === Play.COLORS.bestCard && segment.color === Play.COLORS.bestText)).toBe(true)
   })
 
   test('the first best on record says score only; a tie with the best is no new best', () => {
     const over = toppedOut(midGame())
-    expect(cardOf(over, AWAY).slice(1)).toEqual(['score 238', 'click to play again'])
-    expect(cardOf({ ...over, bestBefore: 238 }, AWAY)[0]).toBe('game over')
+    expect(cardOf(over, AWAY).slice(1)).toEqual(['score 194', 'click to play again'])
+    expect(cardOf({ ...over, bestBefore: 194 }, AWAY)[0]).toBe('game over')
   })
 
   test('the new best card twinkles on the frame clock, every 250 ms', () => {
-    const over = { ...toppedOut(midGame()), bestBefore: 200 }
+    const over = { ...toppedOut(midGame()), bestBefore: 150 }
     const title = (play: PlayState) => cardOf(play, AWAY)[0]
     const later = frames(over, Play.TWINKLE_MS / 50)
     expect(Play.NEW_BEST).toEqual(['✦ new best ✦', '✧ new best ✧'])
