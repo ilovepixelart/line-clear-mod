@@ -16,12 +16,17 @@ tier('user')
  * the level: the second in a row is combo 1.
  */
 
-const nineWide = (rows: number) => boardFrom(...Array.from({ length: rows }, () => '#########.'))
+/** `rows` rows open in column 9, under a row with one cell, so clearing them does not empty the well. */
+const nineWide = (rows: number) => boardFrom('#.........', ...Array.from({ length: rows }, () => '#########.'))
+/** The same rows with nothing above: clearing them empties the well. */
+const nineWideOnly = (rows: number) => boardFrom(...Array.from({ length: rows }, () => '#########.'))
 /** The I stood up and taken to the open column 9, then dropped. */
 const intoColumn9 = ['rotateCw', ...times(4, 'right'), 'hardDrop'] as const
 
 /** An I over `rows` rows open in column 9, at time 0, with `extra` state. */
 const iOver = (rows: number, extra: Partial<GameState> = {}) => gameWith('I', nineWide(rows), extra)
+/** The same with nothing above the rows. */
+const iOverOnly = (rows: number, extra: Partial<GameState> = {}) => gameWith('I', nineWideOnly(rows), extra)
 
 /** The spin double slot from the spin tests, and the T above its mouth. */
 const doubleSlot = boardFrom('####......', '###...####', '####.#####')
@@ -93,3 +98,36 @@ describe('combos', () => {
     expect(Game.newGame(1).combo).toBe(-1)
   })
 })
+
+describe('all clear', () => {
+  // the bonus as the community wiki lists it for the games that score it (the 2018 console
+  // era): added to the clear's own points, times the level
+  test('a clear that empties the well adds 800, 1200, 1800 or 2000 for one to four rows', () => {
+    // a flat I into a row open in columns 3 to 6; an O into two rows open in columns 4 and 5;
+    // a J turned upright into three rows open at column 4, and column 5 of the top one; an I into four
+    const single = play(gameWith('I', boardFrom('###....###')), ['hardDrop'])
+    const double = play(gameWith('O', boardFrom('####..####', '####..####')), ['hardDrop'])
+    const triple = play(gameWith('J', boardFrom('####..####', '####.#####', '####.#####')), ['rotateCw', 'hardDrop'])
+    const four = play(iOverOnly(4), intoColumn9)
+    const totals = [single, double, triple, four].map(game => game.lastAction)
+    expect(totals.map(action => action?.rows)).toEqual([1, 2, 3, 4])
+    expect(totals.map(action => action?.points)).toEqual([100 + 800, 300 + 1200, 500 + 1800, 800 + 2000])
+    expect(totals.every(action => action?.perfect === true)).toBe(true)
+    expect(play(iOverOnly(4), intoColumn9).board.flat().every(cell => cell === null)).toBe(true)
+  })
+
+  test('a back to back four that empties the well adds 3200: 1200 and 3200, 4400', () => {
+    expect(play(iOverOnly(4, { backToBack: true }), intoColumn9).lastAction?.points).toBe(1200 + 3200)
+  })
+
+  test('the bonus is times the level: a single that empties the well at level 2 scores 1800', () => {
+    expect(play(gameWith('I', boardFrom('###....###'), { level: 2, startLevel: 2 }), ['hardDrop']).lastAction?.points).toBe(200 + 1600)
+  })
+
+  test('a clear that leaves a cell in the well gets no bonus', () => {
+    const board = boardFrom('#.........', '#########.', '#########.')
+    const locked = play(gameWith('I', board), intoColumn9)
+    expect(locked.lastAction).toMatchObject({ rows: 2, points: 300, perfect: false })
+  })
+})
+

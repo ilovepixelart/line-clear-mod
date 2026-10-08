@@ -261,9 +261,9 @@ describe('lock delay', () => {
 })
 
 describe('line clears and scoring', () => {
-  /** An I stood up and hard-dropped into the empty column 9 over `rows` rows of nine cells. */
+  /** An I stood up and hard-dropped into the empty column 9 over `rows` rows of nine cells, under a row with one cell. */
   const fillWell = (rows: number, startLevel: number) => {
-    const board = boardFrom(...times(rows, 'tick').map(() => '#########.'))
+    const board = boardFrom('#.........', ...times(rows, 'tick').map(() => '#########.'))
     // the I stands up in column 5, four rights take it to column 9, and it falls 16 rows
     return play(gameWith('I', board, { startLevel, level: startLevel }), ['rotateCw', ...times(4, 'right'), 'hardDrop'])
   }
@@ -287,8 +287,9 @@ describe('line clears and scoring', () => {
   })
 
   test('cleared rows leave the rest of the I above them', () => {
-    expect(lastRows(fillWell(1, 1), 4)).toEqual(['..........', '.........#', '.........#', '.........#'])
-    expect(lastRows(fillWell(4, 1), 1)).toEqual(['..........'])
+    // the row with one cell above the cleared rows falls with the rest
+    expect(lastRows(fillWell(1, 1), 4)).toEqual(['..........', '.........#', '.........#', '#........#'])
+    expect(lastRows(fillWell(4, 1), 1)).toEqual(['#.........'])
   })
 
   test('the tenth line raises the level; that clear still scores at the old level', () => {

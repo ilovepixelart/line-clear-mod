@@ -128,6 +128,9 @@ inputs always replay the same game.
 - **Combos.** Each clear right after another adds 50 times the run's count
   times the level: the second clear in a row is combo 1, the third combo 2.
   A lock that clears nothing ends the run.
+- **All clear.** A clear that empties the well adds 800, 1200, 1800 or 2000
+  for one to four rows, 3200 for a back to back four, times the level, on
+  top of the clear's own points.
 - **Levels.** Up one every 10 cleared rows from the start level.
 - **Game over.** Block out (the next piece has no room to enter) or lock out
   (a piece locks with every cell in the hidden rows).

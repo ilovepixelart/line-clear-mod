@@ -78,7 +78,8 @@ describe('spins: the three-corner rule', () => {
   })
 
   test('two corners taken are not enough: the slot without its overhang is a plain double, 300', () => {
-    const noOverhang = boardFrom('..........', '###...####', '####.#####')
+    // a cell at column 0 of row 19, away from the T's corners, so the clear leaves the well not empty
+    const noOverhang = boardFrom('#.........', '###...####', '####.#####')
     const locked = play(withT(noOverhang, aboveSlot), ['rotateCw', 'hardDrop'])
     expect(Game.linesOf(locked)).toBe(2)
     expect(Game.scoreOf(locked)).toBe(300)

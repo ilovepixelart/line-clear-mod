@@ -14,6 +14,7 @@ import {
   LOCK_DELAY_MS,
   LOCK_RESET_CAP,
   SOFT_DROP_POINTS,
+  allClearScore,
   clearScore,
   isDifficult,
   gravityMs,
@@ -81,7 +82,15 @@ export type GameState = {
 }
 
 /** What a lock did, for scoring and for calling it out: the rows it cleared, its spin and the points it made. */
-export type Action = { readonly rows: number; readonly spin: Spin; readonly points: number; readonly backToBack: boolean; readonly combo: number }
+export type Action = {
+  readonly rows: number
+  readonly spin: Spin
+  readonly points: number
+  readonly backToBack: boolean
+  readonly combo: number
+  /** Whether the clear emptied the well. */
+  readonly perfect: boolean
+}
 
 /** The pause between a lock that clears rows and the next piece. */
 export type Clearing = { readonly startedAt: number; readonly until: number; readonly turn: 1 | -1 | 0; readonly hold: boolean }
@@ -157,7 +166,10 @@ function locked(state: GameState, at: number): GameState {
   const isBackToBack = difficult && state.backToBack
   const combo = cleared === 0 ? -1 : state.combo + 1
   const comboPoints = combo > 0 ? COMBO_POINTS * combo * state.level : 0
-  const points = Math.floor(clearScore(cleared, state.level, spin) * (isBackToBack ? BACK_TO_BACK : 1)) + comboPoints
+  // a lock that clears nothing leaves its own cells, so only a clear can empty the well
+  const perfect = board.every(row => row.every(cell => cell === null))
+  const allClear = perfect ? allClearScore(cleared, state.level, isBackToBack) : 0
+  const points = Math.floor(clearScore(cleared, state.level, spin) * (isBackToBack ? BACK_TO_BACK : 1)) + comboPoints + allClear
 
   const scored = {
     ...state,
@@ -167,7 +179,7 @@ function locked(state: GameState, at: number): GameState {
     level: levelFor(state.startLevel, lines),
     lastClear: rows,
     turnKick: null,
-    lastAction: { rows: cleared, spin, points, backToBack: isBackToBack, combo },
+    lastAction: { rows: cleared, spin, points, backToBack: isBackToBack, combo, perfect },
     backToBack: cleared === 0 ? state.backToBack : difficult,
     combo,
   }

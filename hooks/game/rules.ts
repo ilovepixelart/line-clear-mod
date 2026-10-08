@@ -22,6 +22,21 @@ export const isDifficult = (rows: number, spin: Spin) => rows === 4 || (rows > 0
 /** Each clear right after another adds this many points times the run's count (the second in a row is 1) times the level. */
 export const COMBO_POINTS = 50
 
+/**
+ * The all clear bonus for one to four rows, before the level, added to the
+ * clear's own points; a back to back four that empties the well gets
+ * ALL_CLEAR_BACK_TO_BACK_FOUR instead.
+ */
+const ALL_CLEAR_POINTS = [0, 800, 1200, 1800, 2000] as const
+const ALL_CLEAR_BACK_TO_BACK_FOUR = 3200
+
+/** The all clear bonus for a clear of `rows` rows that empties the well, at `level`. */
+export function allClearScore(rows: number, level: number, isBackToBack: boolean): number {
+  const points = rows === 4 && isBackToBack ? ALL_CLEAR_BACK_TO_BACK_FOUR : (ALL_CLEAR_POINTS[rows as 0 | 1 | 2 | 3 | 4] ?? 0)
+
+  return points * level
+}
+
 /** Points per row a soft drop moves the piece down. */
 export const SOFT_DROP_POINTS = 1
 
