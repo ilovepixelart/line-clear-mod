@@ -33,7 +33,7 @@ const isOver = (data: unknown): data is WellPost =>
 /** The two legend rows of hotkey Buttons: what the keyboard path plays with. */
 const LEGEND = [Play.HOTKEYS.slice(0, 4), Play.HOTKEYS.slice(4)]
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'line-clear', description: 'Open the line-clear game pane: click the well to play' })
 
@@ -45,6 +45,15 @@ export const register: Register = on => {
 
     return {}
   })
+
+  if (options.openOnTurn === true) {
+    on('turn.start', async ($, e, next) => {
+      // unasked, so the pane is only placed on a wide terminal; it never takes the keys
+      void open($)
+
+      return next(e)
+    })
+  }
 
   on('ui.message', { requestId: PANE }, async ($, e) => {
     if (isOver(e.data) && e.data.score > (await bestOf($))) {

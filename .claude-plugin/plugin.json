@@ -18,5 +18,13 @@
     "function-hooks",
     "claude-code-mod"
   ],
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "openOnTurn": {
+      "type": "boolean",
+      "title": "Open the game when a turn starts",
+      "description": "Opens the line-clear pane, without taking the keys, each time Claude starts a turn. Claude Code places a pane opened this way only on a terminal 144 columns wide (110 once you have opened line-clear yourself).",
+      "default": false
+    }
+  }
 }

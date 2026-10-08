@@ -1,6 +1,6 @@
 import { describe, expect, test, tier } from 'claude-code/testing'
 
-import { SESSION, inSession } from './fixtures/pane'
+import { PANE, SESSION, inSession } from './fixtures/pane'
 
 tier('user')
 
@@ -27,12 +27,23 @@ describe('purely a pane', () => {
     expect(seen).toEqual(['hello'])
   })
 
-  test('a turn starts as the engine starts it and opens nothing', async ($, on) => {
+  test('a turn starts as the engine starts it and opens nothing, by default', async ($, on) => {
     const { opened } = inSession(on)
     on('turn.start', (_$, e) => ({ turnId: e.turnId }))
     await $.session.start(SESSION)
 
     expect(await $.turn.start(TURN)).toEqual({ turnId: 't1' })
     expect(opened).toEqual([])
+  })
+})
+
+describe('the openOnTurn setting', () => {
+  test('on, a turn start opens the pane without taking the keys, and the turn goes on as it was', { options: { openOnTurn: true } }, async ($, on) => {
+    const { opened } = inSession(on)
+    on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+    await $.session.start(SESSION)
+
+    expect(await $.turn.start(TURN)).toEqual({ turnId: 't1' })
+    expect(opened).toEqual([{ id: PANE, title: 'line-clear', rows: 25, columns: 50 }])
   })
 })
