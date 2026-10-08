@@ -22,7 +22,8 @@ describe('a new game', () => {
     expect(Game.phaseOf(game)).toBe('playing')
     expect(Game.holdOf(game)).toEqual({ kind: null, canHold: true })
     expect(Game.boardOf(game)).toHaveLength(18)
-    expect(drawn(game).every(row => row === '..........'), 'the piece spawns above the visible rows').toBe(true)
+    expect(game.board.flat().every(cell => cell === null), 'nothing locked').toBe(true)
+    expect(drawn(game).slice(1).every(row => row === '..........'), 'only the entering piece shows, in the top row').toBe(true)
   })
 
   test('shows the next three pieces, and the first seven dealt are one of each kind', () => {
@@ -47,6 +48,30 @@ describe('a new game', () => {
   test('refuses a start level that is not a whole number from 1', () => {
     expect(() => Game.newGame(7, { startLevel: 0 })).toThrow('startLevel')
     expect(() => Game.newGame(7, { startLevel: 2.5 })).toThrow('startLevel')
+  })
+})
+
+describe('entering', () => {
+  test('a piece enters one row below its spawn rows, so a cell of it shows at once', () => {
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const game = Game.newGame(seed)
+      const spawn = Game.spawnPiece(game.active!.kind)
+      expect(game.active!.y, `seed ${seed}`).toBe(spawn.y + 1)
+      expect(Game.activeOf(game).length, `seed ${seed}: ${game.active!.kind}`).toBeGreaterThan(0)
+    }
+  })
+
+  test('the next piece after a lock enters the same way', () => {
+    const next = play(gameWith('O'), ['hardDrop'])
+    expect(next.active!.y).toBe(Game.spawnPiece(next.active!.kind).y + 1)
+  })
+
+  test('a piece with no room for that row stays in its spawn rows, and the game goes on', () => {
+    // visible row 0 taken under the T's spawn: it fits where it spawns but cannot come down
+    const blocked = Game.emptyBoard().map((row, y) => row.map((cell, x) => (y === Game.HIDDEN_ROWS && x >= 3 && x <= 5 ? 'Z' : cell)))
+    const entered = play(gameWith('O', blocked, { hold: 'T' }), ['hold'])
+    expect(entered.active).toEqual(Game.spawnPiece('T'))
+    expect(Game.phaseOf(entered)).toBe('playing')
   })
 })
 
@@ -201,17 +226,17 @@ describe('line clears and scoring', () => {
   /** An I stood up and hard-dropped into the empty column 9 over `rows` rows of nine cells. */
   const fillWell = (rows: number, startLevel: number) => {
     const board = boardFrom(...times(rows, 'tick').map(() => '#########.'))
-    // the I stands up in column 5, four rights take it to column 9, and it falls 17 rows
+    // the I stands up in column 5, four rights take it to column 9, and it falls 16 rows
     return play(gameWith('I', board, { startLevel, level: startLevel }), ['rotateCw', ...times(4, 'right'), 'hardDrop'])
   }
 
-  test('at level 1 one to four rows clear for 100, 300, 500 and 800, plus 34 for the drop', () => {
-    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 1)))).toEqual([134, 334, 534, 834])
+  test('at level 1 one to four rows clear for 100, 300, 500 and 800, plus 32 for the drop', () => {
+    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 1)))).toEqual([132, 332, 532, 832])
     expect([1, 2, 3, 4].map(rows => Game.linesOf(fillWell(rows, 1)))).toEqual([1, 2, 3, 4])
   })
 
   test('at level 5 the clears score five times as much', () => {
-    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 5)))).toEqual([534, 1534, 2534, 4034])
+    expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 5)))).toEqual([532, 1532, 2532, 4032])
   })
 
   test('the game records which board rows the last lock cleared, and none once a lock clears nothing', () => {

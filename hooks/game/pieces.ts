@@ -39,9 +39,12 @@ export function pieceCells(piece: Piece): Point[] {
   return cellsOf(piece.kind, piece.rotation).map(({ x, y }) => at(piece.x + x, piece.y + y))
 }
 
-/** Where each kind enters: centred (3-wide boxes left of centre), in the two hidden rows above the well. */
+/**
+ * Where each kind spawns: flat, centred (3-wide boxes left of centre), in the
+ * two hidden rows just above the well, the I in the lower one.
+ */
 export function spawnPiece(kind: Kind): Piece {
-  return { kind, rotation: 0, x: 3, y: kind === 'I' ? HIDDEN_ROWS - 3 : HIDDEN_ROWS - 2 }
+  return { kind, rotation: 0, x: 3, y: HIDDEN_ROWS - 2 }
 }
 
 /**

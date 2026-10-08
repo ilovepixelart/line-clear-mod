@@ -19,11 +19,12 @@ function chooser(seed: number) {
   }
 }
 
-/** The bottom 12 rows filled except one random column: a well for random drops to fill. */
+/** Rows filled except one random column up to 8 rows below the top of the well: a well for random drops to fill. */
 function holedRows(board: Board, pick: (n: number) => number): Board {
   const hole = pick(Game.WIDTH)
+  const filled = Game.VISIBLE_ROWS - 8
 
-  return board.map((row, y) => (y < Game.ROWS - 12 ? row : row.map((_, x) => (x === hole ? null : 'Z'))))
+  return board.map((row, y) => (y < Game.ROWS - filled ? row : row.map((_, x) => (x === hole ? null : 'Z'))))
 }
 
 type Run = { states: GameState[]; inputs: [Input, number][] }

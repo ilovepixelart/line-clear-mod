@@ -65,12 +65,13 @@ describe('rotation states', () => {
 })
 
 describe('spawn', () => {
-  // Rows 0 to 3 are hidden above the 20 visible rows: pieces spawn in rows 2 and 3,
-  // just above the visible well, centred, the 3-wide ones left of centre.
+  // Rows 0 to 3 are hidden above the 18 visible rows: pieces spawn in rows 2 and 3,
+  // the I in row 3, just above the visible well, centred, the 3-wide ones left of
+  // centre: rows 21 and 22 of the later SRS games, counted from the floor of 20.
   const spawned = (kind: Kind) => keysOf(Game.pieceCells(Game.spawnPiece(kind)))
 
-  test('I spawns flat in row 2, columns 3 to 6', () => {
-    expect(spawned('I')).toEqual(keysOf([3, 4, 5, 6].map(x => ({ x, y: 2 }))))
+  test('I spawns flat in row 3, columns 3 to 6', () => {
+    expect(spawned('I')).toEqual(keysOf([3, 4, 5, 6].map(x => ({ x, y: 3 }))))
   })
 
   test('O spawns in columns 4 and 5, rows 2 and 3', () => {

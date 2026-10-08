@@ -96,13 +96,13 @@ describe('the game region at 80 and 120 columns', () => {
   test('mid game, at 120: the falling piece, its ghost, the held piece, the next three and the numbers', () => {
     expect(texts(midGame(), { ...AWAY, best: 5000 }, 120)).toEqual([
     "                                     hold  used  ╭────────────────────╮  next",
-    "                                     ╭────────╮  │· · · · ████· · · · │  ╭────────╮",
-    "                                     │  ██    │  │· · · · · · · · · · │  │██      │",
+    "                                     ╭────────╮  │· · · ████· · · · · │  ╭────────╮",
+    "                                     │  ██    │  │· · · · ████· · · · │  │██      │",
     "                                     │██████  │  │· · · · · · · · · · │  │██████  │",
     "                                     ╰────────╯  │· · · · · · · · · · │  │        │",
     "                                                 │· · · · · · · · · · │  │    ██  │",
     "                                     score       │· · · · · · · · · · │  │██████  │",
-    "                                     36          │· · · · · · · · · · │  │        │",
+    "                                     34          │· · · · · · · · · · │  │        │",
     "                                                 │· · · · · · · · · · │  │████████│",
     "                                     level       │· · · · · · · · · · │  │        │",
     "                                     1           │· · · · · · · · · · │  ╰────────╯",
@@ -128,16 +128,16 @@ describe('the game region at 80 and 120 columns', () => {
     "                 ╰────────╯  │· · · ██· · · · · · │  │        │",
     "                             │· · · ██████· · · · │  │████    │",
     "                 score       │· · · · ████· · · · │  │  ████  │",
-    "                 194         │                    │  │        │",
+    "                 170         │                    │  │        │",
     "                             │    ✧ new best ✧    │  │████████│",
-    "                 level       │     score 194      │  │        │",
+    "                 level       │     score 170      │  │        │",
     "                 1           │                    │  ╰────────╯",
     "                             │click to play again │",
     "                 lines       │                    │",
     "                 0           │· · · ██· · · · · · │",
     "                             │· · · ██████· · · · │",
     "                 best  new!  │· · · ████· · · · · │",
-    "                 194         │· · · · ████· · · · │",
+    "                 170         │· · · · ████· · · · │",
     "                             │· · · · ████· · · · │",
     "                             │· · · ████· · · · · │",
     "                             ╰────────────────────╯",
@@ -198,22 +198,22 @@ describe('who has the keys, on the status line and the card', () => {
   })
 
   test('a game that beats the best it started against ends on a gold card that says so, and by how much', () => {
-    const over = { ...toppedOut(midGame()), bestBefore: 150 }
-    const score = over.game!.score
-    expect(score).toBe(194)
-    expect(cardOf(over, AWAY)).toEqual([Play.NEW_BEST[Math.floor(over.now / Play.TWINKLE_MS) % 2], 'score 194', 'up 44 on 150', 'click to play again'])
+    const ended = toppedOut(midGame())
+    const score = ended.game!.score
+    const over = { ...ended, bestBefore: score - 44 }
+    expect(cardOf(over, AWAY)).toEqual([Play.NEW_BEST[Math.floor(over.now / Play.TWINKLE_MS) % 2], `score ${score}`, `up 44 on ${score - 44}`, 'click to play again'])
     const card = Play.screenOf(over, AWAY, 80).flat().filter(segment => segment.backgroundColor !== undefined)
     expect(card.every(segment => segment.backgroundColor === Play.COLORS.bestCard && segment.color === Play.COLORS.bestText)).toBe(true)
   })
 
   test('the first best on record says score only; a tie with the best is no new best', () => {
     const over = toppedOut(midGame())
-    expect(cardOf(over, AWAY).slice(1)).toEqual(['score 194', 'click to play again'])
-    expect(cardOf({ ...over, bestBefore: 194 }, AWAY)[0]).toBe('game over')
+    expect(cardOf(over, AWAY).slice(1)).toEqual([`score ${over.game!.score}`, 'click to play again'])
+    expect(cardOf({ ...over, bestBefore: over.game!.score }, AWAY)[0]).toBe('game over')
   })
 
   test('the new best card twinkles on the frame clock, every 250 ms', () => {
-    const over = { ...toppedOut(midGame()), bestBefore: 150 }
+    const over = { ...toppedOut(midGame()), bestBefore: 1 }
     const title = (play: PlayState) => cardOf(play, AWAY)[0]
     const later = frames(over, Play.TWINKLE_MS / 50)
     expect(Play.NEW_BEST).toEqual(['✦ new best ✦', '✧ new best ✧'])

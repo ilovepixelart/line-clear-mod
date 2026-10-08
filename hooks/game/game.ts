@@ -86,12 +86,17 @@ function ended(state: GameState, over: 'block-out' | 'lock-out'): GameState {
   return { ...state, active: null, phase: 'over', over, lockAt: null }
 }
 
-/** The game with `kind` entering at its spawn position at time `at`, or over when there is no room. */
+/**
+ * The game with `kind` entering at time `at`: it spawns, then drops one row
+ * at once when there is room, so it shows straight away. Over when there is
+ * no room to spawn.
+ */
 function spawned(state: GameState, kind: Kind, at: number): GameState {
-  const piece = spawnPiece(kind)
-  if (!fits(state.board, piece)) {
+  const spawn = spawnPiece(kind)
+  if (!fits(state.board, spawn)) {
     return ended(state, 'block-out')
   }
+  const piece = shifted(state.board, spawn, 0, 1) ?? spawn
 
   return {
     ...state,
