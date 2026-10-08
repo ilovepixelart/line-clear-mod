@@ -83,7 +83,7 @@ describe('the game region at 80 and 120 columns', () => {
 
   test('mid game, at 120: the falling piece, its ghost, the held piece, the next three and the numbers', () => {
     expect(texts(midGame(), { ...AWAY, best: 5000 }, 120)).toEqual([
-    "                                     hold        ╭────────────────────╮  next",
+    "                                     hold  used  ╭────────────────────╮  next",
     "                                     ╭────────╮  │· · · · ████· · · · │  ╭────────╮",
     "                                     │  ██    │  │· · · · · · · · · · │  │██      │",
     "                                     │██████  │  │· · · · · · · · · · │  │██████  │",
@@ -250,6 +250,24 @@ describe('the look', () => {
       expect(dark.every((channel, at) => channel < lit[at]!), kind).toBe(true)
     }
     expect(new Set(Object.values(Play.GHOST_COLORS)).size).toBe(7)
+  })
+
+  test('a held piece keeps its color after a hold; the box says used and its frame goes quiet until the next piece', () => {
+    const mid = midGame()
+    const held = mid.game!.hold!
+    const panel = (play: PlayState) => Play.screenOf(play, AWAY, 80).slice(0, 5).map(line => line.slice(0, 3))
+    const tiles = panel(mid).flat().filter(segment => segment.text.includes(Play.CELL))
+    expect(tiles.length).toBeGreaterThan(0)
+    expect(tiles.every(segment => segment.color === Play.PIECE_COLORS[held] && segment.dimColor === undefined)).toBe(true)
+    expect(Play.textOf(Play.screenOf(mid, AWAY, 80)[0]!).trim().startsWith('hold  used')).toBe(true)
+    const frame = (play: PlayState) => panel(play)[1]!.find(segment => segment.text.startsWith('╭'))?.color
+    expect(frame(mid)).toBe(Play.COLORS.label)
+
+    const locked = Play.keyed(mid, { key: 'x' }, AWAY)
+    expect(locked.game!.canHold).toBe(true)
+    expect(Play.textOf(Play.screenOf(locked, AWAY, 80)[0]!).trim().startsWith('hold  ')).toBe(true)
+    expect(Play.textOf(Play.screenOf(locked, AWAY, 80)[0]!)).not.toContain('used')
+    expect(frame(locked)).toBe(Play.COLORS.frame)
   })
 
   test('seven distinct piece colors of its own, none a pure primary or secondary', () => {

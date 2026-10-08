@@ -47,7 +47,7 @@ const pad = (text: string, width: number) => text + ' '.repeat(Math.max(0, width
 const centred = (text: string, width: number) => pad(' '.repeat(Math.max(0, Math.floor((width - text.length) / 2))) + text, width)
 
 /** A kind's spawn cells, moved to the top left and centred in a four-cell box: two rows of segments. */
-function miniPiece(kind: Kind | null, isDim: boolean): Line[] {
+function miniPiece(kind: Kind | null): Line[] {
   if (kind === null) {
     return [[plain(' '.repeat(8))], [plain(' '.repeat(8))]]
   }
@@ -56,7 +56,7 @@ function miniPiece(kind: Kind | null, isDim: boolean): Line[] {
   const top = Math.min(...cells.map(cell => cell.y))
   const width = Math.max(...cells.map(cell => cell.x)) - left + 1
   const offset = Math.floor((4 - width) / 2)
-  const tile: Segment = isDim ? { text: CELL, color: PIECE_COLORS[kind], dimColor: true } : { text: CELL, color: PIECE_COLORS[kind] }
+  const tile: Segment = { text: CELL, color: PIECE_COLORS[kind] }
 
   return [0, 1].map(row =>
     [0, 1, 2, 3].map(column =>
@@ -65,22 +65,27 @@ function miniPiece(kind: Kind | null, isDim: boolean): Line[] {
   )
 }
 
-const boxTop = (inner: number) => plain(`╭${'─'.repeat(inner)}╮`, COLORS.frame)
-const boxBottom = (inner: number) => plain(`╰${'─'.repeat(inner)}╯`, COLORS.frame)
-const side = plain('│', COLORS.frame)
-const boxed = (line: Line): Line => [side, ...line, side]
+const boxTop = (inner: number, color: Color = COLORS.frame) => plain(`╭${'─'.repeat(inner)}╮`, color)
+const boxBottom = (inner: number, color: Color = COLORS.frame) => plain(`╰${'─'.repeat(inner)}╯`, color)
+const boxed = (line: Line, color: Color = COLORS.frame): Line => [plain('│', color), ...line, plain('│', color)]
 
-/** The hold box and the numbers under it, PANEL wide. */
+/**
+ * The hold box and the numbers under it, PANEL wide. After a hold the piece
+ * keeps its color (grey read as broken); the label says used and the frame
+ * goes quiet until the next piece enters.
+ */
 function holdPanel(game: GameState | null, best: number): Line[] {
-  const hold = game === null ? { kind: null, canHold: true } : Game.holdOf(game)
+  const kind = game?.hold ?? null
+  const isUsed = game !== null && !game.canHold
+  const frame = isUsed ? COLORS.label : COLORS.frame
   const score = game?.score ?? 0
   const stat = (label: string, value: number): Line[] => [[plain(pad(label, PANEL), COLORS.label)], [{ text: pad(String(value), PANEL), color: COLORS.value, bold: true }], [plain(' '.repeat(PANEL))]]
 
   return [
-    [plain(pad('hold', PANEL), COLORS.label)],
-    [boxTop(8)],
-    ...miniPiece(hold.kind, !hold.canHold).map(boxed),
-    [boxBottom(8)],
+    [plain(pad(isUsed ? 'hold  used' : 'hold', PANEL), COLORS.label)],
+    [boxTop(8, frame)],
+    ...miniPiece(kind).map(line => boxed(line, frame)),
+    [boxBottom(8, frame)],
     [plain(' '.repeat(PANEL))],
     ...stat('score', score),
     ...stat('level', game?.level ?? 1),
@@ -93,9 +98,9 @@ function holdPanel(game: GameState | null, best: number): Line[] {
 function nextPanel(game: GameState | null): Line[] {
   const next = game === null ? [] : Game.nextOf(game)
   const blank: Line = [plain(' '.repeat(8))]
-  const pieces = [0, 1, 2].flatMap(at => [...miniPiece(next[at] ?? null, false), ...(at < 2 ? [blank] : [])])
+  const pieces = [0, 1, 2].flatMap(at => [...miniPiece(next[at] ?? null), ...(at < 2 ? [blank] : [])])
 
-  return [[plain(pad('next', PANEL), COLORS.label)], [boxTop(8)], ...pieces.map(boxed), [boxBottom(8)]]
+  return [[plain(pad('next', PANEL), COLORS.label)], [boxTop(8)], ...pieces.map(line => boxed(line)), [boxBottom(8)]]
 }
 
 /** What the well shows over the board: the lines of a card, or none. */
@@ -155,7 +160,7 @@ function withCard(rows: Line[], card: string[] | null): Line[] {
 }
 
 function well(play: Play, outside: Outside): Line[] {
-  return [[boxTop(WELL_INNER)], ...withCard(boardRows(play.game), cardOf(play, outside)).map(boxed), [boxBottom(WELL_INNER)]]
+  return [[boxTop(WELL_INNER)], ...withCard(boardRows(play.game), cardOf(play, outside)).map(line => boxed(line)), [boxBottom(WELL_INNER)]]
 }
 
 const widthOf = (line: Line) => line.reduce((sum, segment) => sum + segment.text.length, 0)

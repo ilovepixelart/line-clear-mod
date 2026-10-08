@@ -266,7 +266,7 @@ describe('the region at 80 and 120 columns', () => {
       const margin = Math.floor((columns - 46) / 2)
 
       expect(lines.length, `${columns}`).toBe(23)
-      expect(lines[0], `${columns}`).toBe(`${' '.repeat(margin)}hold        ╭────────────────────╮  next`)
+      expect(lines[0], `${columns}`).toBe(`${' '.repeat(margin)}hold  used  ╭────────────────────╮  next`)
       expect(lines.filter(line => line.length > columns), `${columns}`).toEqual([])
       await ui.unmount()
     }

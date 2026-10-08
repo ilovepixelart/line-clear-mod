@@ -19,7 +19,9 @@ release may change behaviour.
   Space and letters; or, keyboard only, ctrl+x tab and the pane's hotkeys
   `a d w q s x c p`. The status line says who has the keys; two seconds with
   no key on the clicked well pause the game and show `click to play`, since
-  the game cannot observe losing the keys. Hold box, the next three, score,
+  the game cannot observe losing the keys. Hold box (after a hold the piece
+  keeps its color, the box is labelled `used` and its frame goes quiet until
+  the next piece), the next three, score,
   level, lines and best, a ghost shaded in the falling piece's own color,
   and a game-over card that starts the next game on a click (or `p` with the
   pane focused).
