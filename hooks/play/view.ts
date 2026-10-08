@@ -31,6 +31,11 @@ export const CALLOUT_MS = 1_500
 /** What a clear of one to four rows is called. */
 export const CALLOUTS: Readonly<Record<number, string>> = { 1: 'single', 2: 'double', 3: 'triple', 4: 'four at once!' }
 
+/** The new best card's title, in the two looks it twinkles between. */
+export const NEW_BEST = ['✦ new best ✦', '✧ new best ✧'] as const
+/** How long the new best card's title holds each look. */
+export const TWINKLE_MS = 5 * TICK_MS
+
 /** The columns the game takes: hold panel, well, next panel and the gaps between. */
 export const GAME_COLUMNS = PANEL + GAP + WELL + GAP + PANEL
 
@@ -81,7 +86,8 @@ const boxed = (line: Line, color: Color = COLORS.frame): Line => [plain('│', c
  * keeps its color (grey read as broken); the label says used and the frame
  * goes quiet until the next piece enters.
  */
-function holdPanel(game: GameState | null, best: number): Line[] {
+function holdPanel(play: Play, best: number): Line[] {
+  const { game } = play
   const kind = game?.hold ?? null
   const isUsed = game !== null && !game.canHold
   const frame = isUsed ? COLORS.label : COLORS.frame
@@ -97,7 +103,7 @@ function holdPanel(game: GameState | null, best: number): Line[] {
     ...stat('score', score),
     ...stat('level', game?.level ?? 1),
     ...stat('lines', game?.lines ?? 0),
-    ...stat('best', Math.max(best, score)),
+    ...stat(isNewBest(play, best) ? 'best  new!' : 'best', Math.max(best, score)),
   ]
 }
 
@@ -110,21 +116,43 @@ function nextPanel(game: GameState | null): Line[] {
   return [[plain(pad('next', PANEL), COLORS.label)], [boxTop(8)], ...pieces.map(line => boxed(line)), [boxBottom(8)]]
 }
 
-/** What the well shows over the board: the lines of a card, or none. */
-function cardOf(play: Play, outside: Outside): string[] | null {
+/**
+ * Whether the game in play scores more than the best it started against,
+ * and no less than the best kept now (which its own saved score reaches,
+ * and a game elsewhere may have passed).
+ */
+const isNewBest = (play: Play, best: number) => play.game !== null && play.game.score > play.bestBefore && play.game.score >= best
+
+/** A card over the well: its lines, and whether it is the gold one of a new best. */
+type Card = { readonly lines: string[]; readonly isBest: boolean }
+
+/** The game-over card: a gold one that twinkles when the game beat the best it started against. */
+function overCard(play: Play, game: GameState, best: number, again: string): Card {
+  if (!isNewBest(play, best)) {
+    return { lines: ['game over', `score ${game.score}`, '', again], isBest: false }
+  }
+  const title = NEW_BEST[Math.floor(play.now / TWINKLE_MS) % NEW_BEST.length]!
+  const by = play.bestBefore > 0 ? [`up ${game.score - play.bestBefore} on ${play.bestBefore}`] : []
+
+  return { lines: [title, `score ${game.score}`, ...by, '', again], isBest: true }
+}
+
+/** What the well shows over the board: a card, or none. */
+function cardOf(play: Play, outside: Outside): Card | null {
   const focus = focusOf(play, outside)
   const { game } = play
   if (game?.phase === 'over') {
-    return ['game over', `score ${game.score}`, '', focus === 'pane' ? 'p to play again' : 'click to play again']
+    return overCard(play, game, outside.best, focus === 'pane' ? 'p to play again' : 'click to play again')
   }
+  const card = (...lines: string[]): Card => ({ lines, isBest: false })
   if (focus === 'none') {
-    return ['click to play']
+    return card('click to play')
   }
   if (game === null) {
-    return [focus === 'pane' ? 'p to play' : 'click to play']
+    return card(focus === 'pane' ? 'p to play' : 'click to play')
   }
 
-  return game.phase === 'paused' ? ['paused', 'p resumes'] : null
+  return game.phase === 'paused' ? card('paused', 'p resumes') : null
 }
 
 const has = (points: readonly Point[], x: number, y: number) => points.some(point => point.x === x && point.y === y)
@@ -200,11 +228,12 @@ function wellTop(play: Play): Line {
 }
 
 /** The board with a card laid across its middle rows: a blank row above and below the text. */
-function withCard(rows: Line[], card: string[] | null): Line[] {
+function withCard(rows: Line[], card: Card | null): Line[] {
   if (card === null) {
     return rows
   }
-  const lines = ['', ...card, '']
+  const lines = ['', ...card.lines, '']
+  const [background, color] = card.isBest ? [COLORS.bestCard, COLORS.bestText] : [COLORS.card, COLORS.cardText]
   const top = Math.floor((rows.length - lines.length) / 2)
 
   return rows.map((row, y) => {
@@ -214,7 +243,7 @@ function withCard(rows: Line[], card: string[] | null): Line[] {
     }
     const isTitle = y - top === 1
 
-    return [{ text: centred(text, WELL_INNER), color: COLORS.cardText, backgroundColor: COLORS.card, ...(isTitle ? { bold: true as const } : {}) }]
+    return [{ text: centred(text, WELL_INNER), color, backgroundColor: background, ...(isTitle ? { bold: true as const } : {}) }]
   })
 }
 
@@ -234,12 +263,12 @@ const filled = (line: Line | undefined, width: number): Line => {
  * panel, the well and the next panel side by side, centred, then the status
  * line. Narrower than the game, one line asks for room instead.
  */
-export function screenOf(play: Play, outside: Outside & { readonly best: number }, columns: number): Line[] {
+export function screenOf(play: Play, outside: Outside, columns: number): Line[] {
   if (columns > 0 && columns < GAME_COLUMNS) {
     return [[plain(`line-clear needs ${GAME_COLUMNS} columns: widen the pane`, COLORS.away)]]
   }
   const margin = plain(' '.repeat(Math.max(0, Math.floor((columns - GAME_COLUMNS) / 2))))
-  const left = holdPanel(play.game, outside.best)
+  const left = holdPanel(play, outside.best)
   const middle = well(play, outside)
   const right = nextPanel(play.game)
   const gap = plain(' '.repeat(GAP))

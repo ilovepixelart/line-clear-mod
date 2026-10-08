@@ -35,7 +35,7 @@ const Well: ClientModule<WellProps, PlayState> = (props, surface) => {
   const outside = (): Outside => {
     const latest = latestProps.get(surface) ?? props
 
-    return { paneFocused: latest.paneFocused, seedBase: latest.seedBase }
+    return { paneFocused: latest.paneFocused, seedBase: latest.seedBase, best: latest.best }
   }
   const commit = (next: PlayState) => {
     const score = Play.scoreToReport(next)
@@ -60,7 +60,7 @@ const Well: ClientModule<WellProps, PlayState> = (props, surface) => {
   }
   const columns = surface.columns > 0 ? surface.columns : props.columns
 
-  return Play.screenTree(surface.elements, Play.screenOf(play, { ...outside(), best: props.best }, columns))
+  return Play.screenTree(surface.elements, Play.screenOf(play, outside(), columns))
 }
 
 export default Well

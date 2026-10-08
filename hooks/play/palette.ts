@@ -53,6 +53,9 @@ export const COLORS = {
   /** A card over the well: its background and its text. */
   card: '#2A2540',
   cardText: 'text',
+  /** The card over the well when a game beats the best: gold, and its text. */
+  bestCard: '#FFD479',
+  bestText: '#2A2540',
   /** Cleared rows, as they flash before they go. */
   flash: '#FFF4DC',
   /** The word a clear is called in the well's top edge. */

@@ -23,8 +23,8 @@ export type Press = { readonly seq: number; readonly key: string }
  */
 export type Focus = 'region' | 'pane' | 'none'
 
-/** What the hooks module tells the game: whether the pane holds the keys, and a seed base from its clock. */
-export type Outside = { readonly paneFocused: boolean; readonly seedBase: number }
+/** What the hooks module tells the game: whether the pane holds the keys, a seed base from its clock, and the best score kept. */
+export type Outside = { readonly paneFocused: boolean; readonly seedBase: number; readonly best: number }
 
 /** The last lock that cleared rows: when, on the frame clock, and how many rows. */
 export type Clear = { readonly at: number; readonly rows: number }
@@ -47,11 +47,13 @@ export type Play = {
   readonly reported: boolean
   /** The last clear in this game, for the flash and the callout; null before one. */
   readonly clear: Clear | null
+  /** The best score kept when this game started: the one it has to beat, which saving its own score does not move. */
+  readonly bestBefore: number
 }
 
 /** A region that has seen nothing yet; presses up to `seq` came before it and are not its to apply. */
 export function startPlay(seq: number): Play {
-  return { now: 0, game: null, region: false, lastKeyAt: 0, autoPaused: false, seq, reported: false, clear: null }
+  return { now: 0, game: null, region: false, lastKeyAt: 0, autoPaused: false, seq, reported: false, clear: null, bestBefore: 0 }
 }
 
 /** The one place that decides who has the keys: a clicked region first, then the focused pane. */
@@ -86,7 +88,7 @@ function synced(play: Play, outside: Outside): Play {
 function started(play: Play, outside: Outside): Play {
   const seed = (outside.seedBase + play.now) >>> 0
 
-  return { ...play, game: Game.newGame(seed, { startMs: play.now }), autoPaused: false, reported: false, clear: null }
+  return { ...play, game: Game.newGame(seed, { startMs: play.now }), autoPaused: false, reported: false, clear: null, bestBefore: outside.best }
 }
 
 /** `after` with its clear noted when the game in it cleared rows since `before`. */

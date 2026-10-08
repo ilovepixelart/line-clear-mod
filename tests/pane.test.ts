@@ -7,11 +7,11 @@ tier('user')
 const CLICK = { type: 'down', x: 30, y: 10, button: 'left' } as const
 const AWAY_STATUS = 'click to play · or ctrl+x tab, then w a s d'
 
-/** Hard drops until the game-over card shows; how many it took, or -1. */
+/** Hard drops until the game-over card shows (plain or new best, both offer to play again); how many it took, or -1. */
 async function dropUntilOver(ui: Awaited<ReturnType<typeof mounted>>): Promise<number> {
   for (let drops = 1; drops <= 200; drops++) {
     await ui.key({ key: 'space' })
-    if ((await wellLines(ui)).some(line => line.includes('game over'))) {
+    if ((await wellLines(ui)).some(line => line.includes('play again'))) {
       return drops
     }
   }
@@ -124,10 +124,10 @@ describe('the click path', () => {
     expect(lines.some(line => line.includes('click to play again'))).toBe(true)
 
     await ui.key({ key: 'space' })
-    expect((await wellLines(ui)).some(line => line.includes('game over')), 'a key does not restart').toBe(true)
+    expect((await wellLines(ui)).some(line => line.includes('play again')), 'a key does not restart').toBe(true)
     await ui.pointer(CLICK)
     const again = await wellLines(ui)
-    expect(again.some(line => line.includes('game over'))).toBe(false)
+    expect(again.some(line => line.includes('play again'))).toBe(false)
     expect(again[7]?.trim().split(/\s+/)[0]).toBe('0')
   })
 
@@ -211,9 +211,13 @@ describe('the best score', () => {
     await dropUntilOver(ui)
     const score = Number((await wellLines(ui))[7]?.trim().split(/\s+/)[0])
     expect(score).toBeGreaterThan(3)
+    await ui.advance(100)
+    const lines = await wellLines(ui)
+    expect(lines.some(line => line.includes(`up ${score - 3} on 3`))).toBe(true)
     await ui.unmount()
 
     expect(store.get('best')).toBe(score)
+    expect(lines.some(line => line.includes('new best')), 'the card still calls it a new best once it is saved').toBe(true)
     const next = await mounted($)
     expect((await wellLines(next))[16]?.trim().split(/\s+/)[0]).toBe(String(score))
   })
@@ -226,6 +230,8 @@ describe('the best score', () => {
 
     expect(store.get('best')).toBe(1_000_000)
     expect((await wellLines(ui))[16]?.trim().split(/\s+/)[0]).toBe('1000000')
+    expect((await wellLines(ui)).some(line => line.includes('game over'))).toBe(true)
+    expect((await wellLines(ui)).some(line => line.includes('new best'))).toBe(false)
   })
 
   test('an ended game is handed to the hooks module once, however long the card shows', async ($, on) => {

@@ -6,8 +6,8 @@ import type { Outside, Play as PlayState } from '../../hooks/play'
 
 tier('user')
 
-const AWAY: Outside = { paneFocused: false, seedBase: 1_000 }
-const PANE: Outside = { paneFocused: true, seedBase: 1_000 }
+const AWAY: Outside = { paneFocused: false, seedBase: 1_000, best: 0 }
+const PANE: Outside = { paneFocused: true, seedBase: 1_000, best: 0 }
 const CLICK = { type: 'down', x: 3, y: 3, button: 'left' } as const
 
 /** Frames of the frame clock, `ms` of them in all. */
@@ -59,7 +59,7 @@ describe('a click on the game region', () => {
     const at = (outside: Outside, ms: number) => Play.pointed(frames(Play.startPlay(0), ms), CLICK, outside).game
     expect(at(AWAY, 500)).toEqual(at(AWAY, 500))
     const firstFourteen = (ms: number, seedBase: number) => {
-      const game = at({ paneFocused: false, seedBase }, ms)!
+      const game = at({ paneFocused: false, seedBase, best: 0 }, ms)!
       return [game.active!.kind, ...game.queue.slice(0, 13)].join('')
     }
     expect(firstFourteen(500, 1_000)).not.toEqual(firstFourteen(550, 1_000))
@@ -205,6 +205,18 @@ describe('the focused pane and its Buttons', () => {
     expect(Play.pressed(play, [{ seq: 1, key: 'a' }], PANE).game).toBeNull()
     expect(Play.pressed(play, [{ seq: 1, key: 'x' }], PANE).game).toBeNull()
     expect(Play.pressed(play, [{ seq: 1, key: 'p' }], PANE).game?.phase).toBe('playing')
+  })
+})
+
+describe('the best to beat', () => {
+  test('a game remembers the best it started against, by a click or by the pane', () => {
+    expect(Play.pointed(Play.startPlay(0), CLICK, { ...AWAY, best: 500 }).bestBefore).toBe(500)
+    expect(Play.pressed(Play.startPlay(0), [{ seq: 1, key: 'p' }], { ...PANE, best: 70 }).bestBefore).toBe(70)
+  })
+
+  test('a best saved while the game runs does not move the one it started against', () => {
+    const play = Play.pointed(Play.startPlay(0), CLICK, { ...AWAY, best: 500 })
+    expect(Play.ticked(Play.keyed(play, { key: 'space' }, { ...AWAY, best: 9_000 }), { ...AWAY, best: 9_000 }).bestBefore).toBe(500)
   })
 })
 

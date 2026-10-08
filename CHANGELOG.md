@@ -29,6 +29,10 @@ release may change behaviour.
   (250 ms) before the rows above fall, and the clear is called out in the
   well's top edge for 1.5 s: `single`, `double`, `triple` or
   `four at once!`. Both run on the frame clock, so no extra timer.
+- A new best is an event: a game that beats the best it started against
+  ends on a gold card, `✦ new best ✦` twinkling every 250 ms, with the score
+  and how far it beat the old best; while the score in play is ahead, the
+  best label reads `best  new!`.
 - The best score is kept across sessions, the only value stored.
 - `openOnTurn` setting, off by default: opens the pane, unfocused, when a
   turn starts.
