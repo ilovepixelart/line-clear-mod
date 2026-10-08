@@ -237,6 +237,19 @@ function applied(state: GameState, input: Input, now: number): GameState {
   }
 }
 
+/** The paused game playing again at `now`, its gravity and lock clocks moved on by the time it was paused. */
+function resumed(state: GameState, now: number): GameState {
+  const pausedFor = Math.max(0, now - (state.pausedAt ?? now))
+
+  return {
+    ...state,
+    phase: 'playing',
+    pausedAt: null,
+    fallAt: state.fallAt + pausedFor,
+    lockAt: state.lockAt === null ? null : state.lockAt + pausedFor,
+  }
+}
+
 /** A new game from a seed: the same seed and options always give the same game. */
 export function newGame(seed: number, options: GameOptions = {}): GameState {
   const startLevel = options.startLevel ?? 1
@@ -274,7 +287,10 @@ export function newGame(seed: number, options: GameOptions = {}): GameState {
  * input and time always give the same result.
  */
 export function step(state: GameState, input: Input, nowMs: number): GameState {
-  if (state.phase !== 'playing') {
+  if (state.phase === 'paused') {
+    return input === 'pause' ? resumed(state, nowMs) : state
+  }
+  if (state.phase === 'over') {
     return state
   }
   const current = caughtUp(state, nowMs)
@@ -282,7 +298,7 @@ export function step(state: GameState, input: Input, nowMs: number): GameState {
     return current
   }
 
-  return applied(current, input, nowMs)
+  return input === 'pause' ? { ...current, phase: 'paused', pausedAt: nowMs } : applied(current, input, nowMs)
 }
 
 const toVisible = ({ x, y }: Point): Point => ({ x, y: y - HIDDEN_ROWS })
