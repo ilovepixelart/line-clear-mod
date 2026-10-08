@@ -122,6 +122,9 @@ inputs always replay the same game.
   across and two rows, is a spin, else a mini. A spin scores 400, 800, 1200
   or 1600 for none to three rows, a mini 100, 200 or 400 for none to two,
   times the level.
+- **Back to back.** A difficult clear (four rows at once, or a spin that
+  clears rows) right after another scores half again. A single, double or
+  triple ends the run; a lock that clears nothing does not.
 - **Levels.** Up one every 10 cleared rows from the start level.
 - **Game over.** Block out (the next piece has no room to enter) or lock out
   (a piece locks with every cell in the hidden rows).

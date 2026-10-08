@@ -13,6 +13,12 @@ const CLEAR_POINTS: Readonly<Record<Spin, readonly number[]>> = {
   spin: [400, 800, 1200, 1600],
 }
 
+/** A difficult clear right after another one scores this many times its points. */
+export const BACK_TO_BACK = 1.5
+
+/** Whether a clear is difficult, for back to back: four rows at once, or a spin that clears rows. */
+export const isDifficult = (rows: number, spin: Spin) => rows === 4 || (rows > 0 && spin !== 'none')
+
 /** Points per row a soft drop moves the piece down. */
 export const SOFT_DROP_POINTS = 1
 
