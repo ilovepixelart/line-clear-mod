@@ -77,6 +77,7 @@ export const register: Register = (on, options) => {
       paneFocused: e.props.isFocused,
       columns: e.props.bodyColumns,
       presses: await read($, presses),
+      startLevel: Play.startLevelOf(options.startLevel),
     }
     const margin = Math.max(0, Math.floor((e.props.bodyColumns - Play.GAME_COLUMNS) / 2))
     const press = (key: string) => () => update($, presses, list => [...list, { seq: (list.at(-1)?.seq ?? 0) + 1, key }].slice(-PRESSES_KEPT))

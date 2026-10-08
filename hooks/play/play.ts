@@ -25,7 +25,15 @@ export type Press = { readonly seq: number; readonly key: string }
 export type Focus = 'region' | 'pane' | 'none'
 
 /** What the hooks module tells the game: whether the pane holds the keys, a seed base from its clock, and the best score kept. */
-export type Outside = { readonly paneFocused: boolean; readonly seedBase: number; readonly best: number }
+export type Outside = { readonly paneFocused: boolean; readonly seedBase: number; readonly best: number; readonly startLevel?: number }
+
+/** The highest level a game may start at: gravity stops speeding up there. */
+export const MAX_START_LEVEL = 15
+
+/** The startLevel setting as a level a game can start at: a whole number from 1 to MAX_START_LEVEL, else 1. */
+export function startLevelOf(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_START_LEVEL ? value : 1
+}
 
 /** The last lock that cleared rows: when, on the frame clock, and how many rows. */
 export type Clear = { readonly at: number; readonly rows: number }
@@ -91,7 +99,7 @@ function synced(play: Play, outside: Outside): Play {
 function started(play: Play, outside: Outside): Play {
   const seed = (outside.seedBase + play.now) >>> 0
 
-  return { ...play, game: Game.newGame(seed, { startMs: play.now }), autoPaused: false, reported: false, clear: null, bestBefore: outside.best }
+  return { ...play, game: Game.newGame(seed, { startMs: play.now, startLevel: startLevelOf(outside.startLevel) }), autoPaused: false, reported: false, clear: null, bestBefore: outside.best }
 }
 
 /** `after` with its clear noted when the game in it cleared rows since `before`. */

@@ -25,6 +25,12 @@
       "title": "Open the game when a turn starts",
       "description": "Opens the line-clear pane, without taking the keys, each time Claude starts a turn. Claude Code places a pane opened this way only on a terminal 144 columns wide (110 once you have opened line-clear yourself).",
       "default": false
+    },
+    "startLevel": {
+      "type": "number",
+      "title": "Start level",
+      "description": "The level each game starts at, 1 to 15: gravity starts that fast, and a level is gained every 10 rows from there.",
+      "default": 1
     }
   }
 }

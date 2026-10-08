@@ -46,3 +46,5 @@ release may change behaviour.
 - The best score is kept across sessions, the only value stored.
 - `openOnTurn` setting, off by default: opens the pane, unfocused, when a
   turn starts.
+- `startLevel` setting, 1 by default: the level each game starts at, 1 to
+  15.

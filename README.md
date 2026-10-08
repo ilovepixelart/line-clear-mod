@@ -76,6 +76,7 @@ The pane needs 46 columns and 23 rows. Below 46 columns it asks for room.
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `openOnTurn` | off | Opens the pane, without taking the keys, each time a turn starts. Claude Code places a pane opened this way only on a terminal 144 columns wide (110 once you have opened line-clear yourself in a session). |
+| `startLevel` | 1 | The level each game starts at, a whole number from 1 to 15; anything else reads as 1. |
 
 Change it in `/config`, or under `pluginConfigs["line-clear"].options` in
 settings.

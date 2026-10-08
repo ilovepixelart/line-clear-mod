@@ -1,5 +1,6 @@
 import { describe, expect, test, tier } from 'claude-code/testing'
 
+import Play from '../hooks/play'
 import { COMMAND, PANE, PLUGIN, SESSION, ghostColumn, inSession, mounted, paneProps, statusOf, wellLines, wellStrings } from './fixtures/pane'
 
 tier('user')
@@ -294,3 +295,35 @@ describe('the region at 80 and 120 columns', () => {
     }
   })
 })
+
+describe('the startLevel setting', () => {
+  const levelShown = async (ui: Awaited<ReturnType<typeof mounted>>) => (await wellLines(ui))[10]?.trim().split(/\s+/)[0]
+
+  test('by default a game starts at level 1', async ($, on) => {
+    inSession(on)
+    const ui = await mounted($)
+    await ui.pointer(CLICK)
+    expect(await levelShown(ui)).toBe('1')
+  })
+
+  test('set to 7, each game starts at level 7 and falls at its speed', { options: { startLevel: 7 } }, async ($, on) => {
+    inSession(on)
+    const ui = await mounted($)
+    await ui.pointer(CLICK)
+    expect(await levelShown(ui)).toBe('7')
+    // level 7 falls a row each (0.8 - 6 * 0.007) ^ 6 s = 190 ms: a second brings it down 5 rows, where level 1 brings 1
+    const top = (await wellLines(ui)).findLastIndex(line => line.slice(30, 50).includes('█'))
+    await ui.advance(1_000)
+    const after = (await wellLines(ui)).findLastIndex(line => line.slice(30, 50).includes('█'))
+    expect(after - top).toBe(5)
+  })
+
+  test('a level that is not a whole number from 1 to 15 reads as 1', async ($, on) => {
+    for (const startLevel of [0, 2.5, 16, -3]) {
+      expect(Play.startLevelOf(startLevel), String(startLevel)).toBe(1)
+    }
+    expect(Play.startLevelOf(15)).toBe(15)
+    expect(Play.startLevelOf('5')).toBe(1)
+  })
+})
+

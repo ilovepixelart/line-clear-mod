@@ -15,6 +15,8 @@ export type WellProps = {
   columns: number
   /** The latest pane Button presses, numbered. */
   presses: Press[]
+  /** The level each game starts at, from the startLevel setting. */
+  startLevel: number
 }
 
 /** What the hooks module hears from the region: an ended game's score. */
@@ -35,7 +37,7 @@ const Well: ClientModule<WellProps, PlayState> = (props, surface) => {
   const outside = (): Outside => {
     const latest = latestProps.get(surface) ?? props
 
-    return { paneFocused: latest.paneFocused, seedBase: latest.seedBase, best: latest.best }
+    return { paneFocused: latest.paneFocused, seedBase: latest.seedBase, best: latest.best, startLevel: latest.startLevel }
   }
   const commit = (next: PlayState) => {
     const score = Play.scoreToReport(next)
