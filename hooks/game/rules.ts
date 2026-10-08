@@ -1,11 +1,17 @@
 /**
  * The game's numbers. Scoring and gravity follow the widely published modern
- * guideline values; back-to-back bonuses, combos and spin bonuses are not
- * scored.
+ * guideline values.
  */
 
-/** Points for clearing 0 to 4 rows with one lock, before multiplying by the level. */
-const CLEAR_POINTS = [0, 100, 300, 500, 800] as const
+/** A T spin by the three-corner rule: none, a mini, or a full spin. */
+export type Spin = 'none' | 'mini' | 'spin'
+
+/** Points for clearing 0 to 4 rows with one lock, by spin, before multiplying by the level. */
+const CLEAR_POINTS: Readonly<Record<Spin, readonly number[]>> = {
+  none: [0, 100, 300, 500, 800],
+  mini: [100, 200, 400],
+  spin: [400, 800, 1200, 1600],
+}
 
 /** Points per row a soft drop moves the piece down. */
 export const SOFT_DROP_POINTS = 1
@@ -28,9 +34,9 @@ export const LOCK_RESET_CAP = 15
 /** Gravity stops speeding up here, at about 7 ms a row. */
 const FASTEST_GRAVITY_LEVEL = 15
 
-/** The score for clearing `lines` rows with one lock at `level`. */
-export function clearScore(lines: number, level: number): number {
-  return (CLEAR_POINTS[lines as 0 | 1 | 2 | 3 | 4] ?? 0) * level
+/** The score for clearing `lines` rows with one lock at `level`, a spin or not. */
+export function clearScore(lines: number, level: number, spin: Spin = 'none'): number {
+  return (CLEAR_POINTS[spin][lines] ?? 0) * level
 }
 
 /** The level after `lines` cleared rows in a game started at `startLevel`. */

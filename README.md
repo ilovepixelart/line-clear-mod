@@ -116,7 +116,12 @@ inputs always replay the same game.
   piece at once; reaching a new lowest row with any cell restores all 15.
 - **Score.** A lock that clears 1, 2, 3 or 4 rows scores 100, 300, 500 or 800
   times the level it was made at. A soft drop scores 1 a row, a hard drop 2.
-  No combo, back-to-back or spin bonuses.
+- **Spins.** A T whose last successful move was a turn, locking with three of
+  the four cells diagonal to its centre taken (walls and floor count), spins:
+  both cells on its pointing side taken, or a turn whose kick moved it one
+  across and two rows, is a spin, else a mini. A spin scores 400, 800, 1200
+  or 1600 for none to three rows, a mini 100, 200 or 400 for none to two,
+  times the level.
 - **Levels.** Up one every 10 cleared rows from the start level.
 - **Game over.** Block out (the next piece has no room to enter) or lock out
   (a piece locks with every cell in the hidden rows).

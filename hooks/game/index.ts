@@ -5,6 +5,7 @@ export * from './moves'
 export * from './pieces'
 export * from './random'
 export * from './rules'
+export * from './spin'
 export * from './types'
 
 export * as default from '.'

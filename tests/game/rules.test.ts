@@ -13,6 +13,12 @@ describe('scoring', () => {
     expect([1, 2, 3, 4].map(lines => Game.clearScore(lines, 5))).toEqual([500, 1500, 2500, 4000])
   })
 
+  test('a spin scores 400, 800, 1200 and 1600 for none to three rows; a mini 100, 200 and 400 for none to two', () => {
+    expect([0, 1, 2, 3].map(lines => Game.clearScore(lines, 1, 'spin'))).toEqual([400, 800, 1200, 1600])
+    expect([0, 1, 2].map(lines => Game.clearScore(lines, 1, 'mini'))).toEqual([100, 200, 400])
+    expect(Game.clearScore(2, 4, 'spin')).toBe(4800)
+  })
+
   test('a lock that clears nothing scores nothing', () => {
     expect(Game.clearScore(0, 7)).toBe(0)
   })

@@ -5,6 +5,7 @@ import { dropDistance, fits, placed, rotated, shifted } from './moves'
 import { pieceCells, spawnPiece } from './pieces'
 import type { Piece } from './pieces'
 import { seedRandom } from './random'
+import { spinOf } from './spin'
 import {
   CLEAR_MS,
   HARD_DROP_POINTS,
@@ -15,6 +16,7 @@ import {
   gravityMs,
   levelFor,
 } from './rules'
+import type { Spin } from './rules'
 import type { Kind, Point } from './types'
 
 /** One thing that happens to a game: a press, or a tick that only lets time pass. */
@@ -65,7 +67,14 @@ export type GameState = {
    * ends, and the last turn and the hold asked for meanwhile, done as it enters.
    */
   readonly clearing: Clearing | null
+  /** The kick of the falling piece's last successful move when that move was a turn; null after any other move. */
+  readonly turnKick: Point | null
+  /** What the last lock did; null before the first. */
+  readonly lastAction: Action | null
 }
+
+/** What a lock did, for scoring and for calling it out: the rows it cleared, its spin and the points it made. */
+export type Action = { readonly rows: number; readonly spin: Spin; readonly points: number }
 
 /** The pause between a lock that clears rows and the next piece. */
 export type Clearing = { readonly startedAt: number; readonly until: number; readonly turn: 1 | -1 | 0; readonly hold: boolean }
@@ -134,16 +143,20 @@ function locked(state: GameState, at: number): GameState {
   if (pieceCells(piece).every(({ y }) => y < HIDDEN_ROWS)) {
     return ended({ ...state, board: placed(state.board, piece) }, 'lock-out')
   }
+  const spin = spinOf(state.board, piece, state.turnKick)
   const { board, cleared, rows } = clearedRows(placed(state.board, piece))
   const lines = state.lines + cleared
+  const points = clearScore(cleared, state.level, spin)
 
   const scored = {
     ...state,
     board,
-    score: state.score + clearScore(cleared, state.level),
+    score: state.score + points,
     lines,
     level: levelFor(state.startLevel, lines),
     lastClear: rows,
+    turnKick: null,
+    lastAction: { rows: cleared, spin, points },
   }
   if (cleared === 0) {
     return nextPiece(scored, at)
@@ -181,12 +194,12 @@ function buffered(state: GameState, clearing: Clearing, input: Input): GameState
  * one. A piece that rests afterwards restarts its lock delay, unless it has
  * spent more than LOCK_RESET_CAP, when it locks at once.
  */
-function movedTo(state: GameState, piece: Piece, at: number, isPress: boolean): GameState {
+function movedTo(state: GameState, piece: Piece, at: number, isPress: boolean, turnKick: Point | null = null): GameState {
   const bottom = bottomOf(piece)
   const isLower = bottom > state.lowestY
   const wasResting = state.lockAt !== null
   const lockResets = isLower ? 0 : state.lockResets + (isPress && wasResting ? 1 : 0)
-  const moved = { ...state, active: piece, lowestY: Math.max(bottom, state.lowestY), lockResets }
+  const moved = { ...state, active: piece, lowestY: Math.max(bottom, state.lowestY), lockResets, turnKick }
   if (!isResting(state.board, piece)) {
     // a piece that leaves a rest starts its gravity clock there, not at its last fall
     return { ...moved, lockAt: null, fallAt: wasResting ? at : state.fallAt }
@@ -241,7 +254,9 @@ function hardDropped(state: GameState, now: number): GameState {
   const piece = state.active!
   const rows = dropDistance(state.board, piece)
 
-  return locked({ ...state, active: { ...piece, y: piece.y + rows }, score: state.score + rows * HARD_DROP_POINTS }, now)
+  const turnKick = rows === 0 ? state.turnKick : null
+
+  return locked({ ...state, active: { ...piece, y: piece.y + rows }, score: state.score + rows * HARD_DROP_POINTS, turnKick }, now)
 }
 
 /** The game after a press that moves or turns the piece; the same game when it cannot. */
@@ -252,7 +267,12 @@ function pressed(state: GameState, input: 'left' | 'right' | 'rotateCw' | 'rotat
       ? shifted(state.board, piece, input === 'left' ? -1 : 1, 0)
       : rotated(state.board, piece, input === 'rotateCw' ? 1 : -1)
 
-  return moved === null ? state : movedTo(state, moved, now, true)
+  if (moved === null) {
+    return state
+  }
+  const isTurn = input === 'rotateCw' || input === 'rotateCcw'
+
+  return movedTo(state, moved, now, true, isTurn ? { x: moved.x - piece.x, y: moved.y - piece.y } : null)
 }
 
 /** The game after a slide: the piece moved left or right as far as it goes, as one move. The same game when it cannot move. */
@@ -339,6 +359,8 @@ export function newGame(seed: number, options: GameOptions = {}): GameState {
     pausedAt: null,
     lastClear: [],
     clearing: null,
+    turnKick: null,
+    lastAction: null,
   }
 
   return nextPiece(empty, options.startMs ?? 0)
