@@ -11,11 +11,11 @@ const entered = (kind: Parameters<typeof Game.spawnPiece>[0]) => ({ ...Game.spaw
 describe('hold', () => {
   test('the first hold keeps the piece and brings on the next one from the queue', () => {
     const game = gameWith('T')
-    const next = game.queue.slice(0, 4)
+    const next = game.queue.slice(0, 6)
     const held = play(game, ['hold'])
     expect(Game.holdOf(held)).toEqual({ kind: 'T', canHold: false })
     expect(held.active).toEqual(entered(next[0]!))
-    expect(Game.nextOf(held)).toEqual(next.slice(1, 4))
+    expect(Game.nextOf(held)).toEqual(next.slice(1, 6))
   })
 
   test('a second hold before the piece locks does nothing', () => {

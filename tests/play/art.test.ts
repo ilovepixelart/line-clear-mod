@@ -81,13 +81,13 @@ describe('the game region at 80 and 120 columns', () => {
     "                 0           │· · · · · · · · · · │  │        │",
     "                             │                    │  │        │",
     "                 level       │   click to play    │  │        │",
-    "                 1           │                    │  ╰────────╯",
-    "                             │· · · · · · · · · · │",
-    "                 lines       │· · · · · · · · · · │",
-    "                 0           │· · · · · · · · · · │",
-    "                             │· · · · · · · · · · │",
-    "                 best        │· · · · · · · · · · │",
-    "                 0           │· · · · · · · · · · │",
+    "                 1           │                    │  │        │",
+    "                             │· · · · · · · · · · │  │        │",
+    "                 lines       │· · · · · · · · · · │  │        │",
+    "                 0           │· · · · · · · · · · │  │        │",
+    "                             │· · · · · · · · · · │  │        │",
+    "                 best        │· · · · · · · · · · │  │        │",
+    "                 0           │· · · · · · · · · · │  ╰────────╯",
     "                             │· · · · · · · · · · │",
     "                             │· · · · · · · · · · │",
     "                             ╰────────────────────╯",
@@ -95,7 +95,7 @@ describe('the game region at 80 and 120 columns', () => {
     ])
   })
 
-  test('mid game, at 120: the falling piece, its ghost, the held piece, the next three and the numbers', () => {
+  test('mid game, at 120: the falling piece, its ghost, the held piece, the next five and the numbers', () => {
     expect(texts(midGame(), { ...AWAY, best: 5000 }, 120)).toEqual([
     "                                     hold  used  ╭────────────────────╮  next",
     "                                     ╭────────╮  │· · · ████· · · · · │  ╭────────╮",
@@ -107,13 +107,13 @@ describe('the game region at 80 and 120 columns', () => {
     "                                     34          │· · · · · · · · · · │  │        │",
     "                                                 │· · · · · · · · · · │  │████████│",
     "                                     level       │· · · · · · · · · · │  │        │",
-    "                                     1           │· · · · · · · · · · │  ╰────────╯",
-    "                                                 │· · · · · · · · · · │",
-    "                                     lines       │· · · · · · · · · · │",
-    "                                     0           │· · · · · · · · · · │",
-    "                                                 │· · · · · · · · · · │",
-    "                                     best        │· · · ▓▓▓▓· · · · · │",
-    "                                     5000        │· · · · ▓▓▓▓· · · · │",
+    "                                     1           │· · · · · · · · · · │  │        │",
+    "                                                 │· · · · · · · · · · │  │  ████  │",
+    "                                     lines       │· · · · · · · · · · │  │  ████  │",
+    "                                     0           │· · · · · · · · · · │  │        │",
+    "                                                 │· · · · · · · · · · │  │  ████  │",
+    "                                     best        │· · · ▓▓▓▓· · · · · │  │  ████  │",
+    "                                     5000        │· · · · ▓▓▓▓· · · · │  ╰────────╯",
     "                                                 │· · · · ████· · · · │",
     "                                                 │· · · ████· · · · · │",
     "                                                 ╰────────────────────╯",
@@ -133,13 +133,13 @@ describe('the game region at 80 and 120 columns', () => {
     "                 170         │                    │  │        │",
     "                             │    ✧ new best ✧    │  │        │",
     "                 level       │     score 170      │  │        │",
-    "                 1           │                    │  ╰────────╯",
-    "                             │click to play again │",
-    "                 lines       │                    │",
-    "                 0           │· · · ██· · · · · · │",
-    "                             │· · · ██████· · · · │",
-    "                 best  new!  │· · · ████· · · · · │",
-    "                 170         │· · · · ████· · · · │",
+    "                 1           │                    │  │        │",
+    "                             │click to play again │  │        │",
+    "                 lines       │                    │  │        │",
+    "                 0           │· · · ██· · · · · · │  │        │",
+    "                             │· · · ██████· · · · │  │        │",
+    "                 best  new!  │· · · ████· · · · · │  │        │",
+    "                 170         │· · · · ████· · · · │  ╰────────╯",
     "                             │· · · · ████· · · · │",
     "                             │· · · ████· · · · · │",
     "                             ╰────────────────────╯",
@@ -228,6 +228,29 @@ describe('who has the keys, on the status line and the card', () => {
     expect(label({ ...mid, bestBefore: 1_000 })).toBe('best')
     expect(label({ ...mid, bestBefore: 10 })).toBe('best  new!')
     expect(label({ ...mid, bestBefore: mid.game!.score })).toBe('best')
+  })
+
+  test('the next box shows the next five pieces, in order, top to bottom', () => {
+    const mid = midGame()
+    const next = Game.nextOf(mid.game!)
+    expect(next).toHaveLength(5)
+    const lines = Play.screenOf(mid, AWAY, 80)
+    /** The colors of the tiles in the next box's columns (53 to 60 at 80 wide) on a line. */
+    const colorsOn = (line: Line) => {
+      let at = 0
+      return line.flatMap(segment => {
+        const start = at
+        at += segment.text.length
+        return start >= 53 && start < 61 && segment.text.includes(Play.CELL) ? [segment.color] : []
+      })
+    }
+    // each piece takes two rows of the box, a blank row between: rows 2 and 3, 5 and 6, ... 14 and 15
+    next.forEach((kind, at) => {
+      const colors = [...colorsOn(lines[2 + 3 * at]!), ...colorsOn(lines[3 + 3 * at]!)]
+      expect(colors.length, `${at}: ${kind}`).toBeGreaterThan(0)
+      expect(colors.every(color => color === Play.PIECE_COLORS[kind]), `${at}: ${kind}`).toBe(true)
+    })
+    expect(Play.textOf(lines[16]!).slice(53, 63)).toBe('╰────────╯')
   })
 
   test('at game over the next box is empty and no piece is falling', () => {

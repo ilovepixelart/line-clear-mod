@@ -130,11 +130,11 @@ function holdPanel(play: Play, best: number): Line[] {
   ]
 }
 
-/** The next three pieces, PANEL wide; none once the game is over. */
+/** The next PREVIEW_SIZE pieces, PANEL wide; none once the game is over. */
 function nextPanel(game: GameState | null): Line[] {
   const next = game === null || game.phase === 'over' ? [] : Game.nextOf(game)
   const blank: Line = [plain(' '.repeat(8))]
-  const pieces = [0, 1, 2].flatMap(at => [...miniPiece(next[at] ?? null), ...(at < 2 ? [blank] : [])])
+  const pieces = Array.from({ length: Game.PREVIEW_SIZE }, (_, at) => [...miniPiece(next[at] ?? null), ...(at < Game.PREVIEW_SIZE - 1 ? [blank] : [])]).flat()
 
   return [[plain(pad('next', PANEL), COLORS.label)], [boxTop(8)], ...pieces.map(line => boxed(line)), [boxBottom(8)]]
 }

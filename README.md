@@ -99,7 +99,7 @@ inputs always replay the same game.
 - **Well.** 10 columns by 18 visible rows, with 4 hidden rows above where
   pieces enter.
 - **Pieces.** Seven four-cell pieces, dealt from a 7-bag (each run of seven
-  holds one of each) shuffled by a seeded generator. The next three are shown.
+  holds one of each) shuffled by a seeded generator. The next five are shown.
 - **Turning.** Super Rotation System states and wall kicks, from its published
   kick table ([`hooks/game/pieces.ts`](hooks/game/pieces.ts)). The square
   never kicks.

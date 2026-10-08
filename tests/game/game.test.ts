@@ -26,9 +26,10 @@ describe('a new game', () => {
     expect(drawn(game).slice(1).every(row => row === '..........'), 'only the entering piece shows, in the top row').toBe(true)
   })
 
-  test('shows the next three pieces, and the first seven dealt are one of each kind', () => {
+  test('shows the next five pieces, and the first seven dealt are one of each kind', () => {
     const game = Game.newGame(7)
-    expect(Game.nextOf(game)).toHaveLength(3)
+    expect(Game.nextOf(game)).toHaveLength(5)
+    expect(Game.nextOf(game)).toEqual(game.queue.slice(0, 5))
     expect([game.active!.kind, ...game.queue.slice(0, 6)].sort()).toEqual(ALL_KINDS)
   })
 
@@ -159,13 +160,13 @@ describe('drops', () => {
 
   test('a hard drop locks at once at the ghost, for 2 points a row, and brings on the next piece', () => {
     const game = gameWith('T')
-    const next = game.queue.slice(0, 4)
+    const next = game.queue.slice(0, 6)
     const dropped = play(game, ['hardDrop'])
     // T spawns in rows 2 and 3 and falls 18 rows to rows 20 and 21 (visible 16 and 17)
     expect(lastRows(dropped, 2)).toEqual(['....#.....', '...###....'])
     expect(Game.scoreOf(dropped)).toBe(36)
     expect(dropped.active?.kind).toBe(next[0])
-    expect(Game.nextOf(dropped)).toEqual(next.slice(1, 4))
+    expect(Game.nextOf(dropped)).toEqual(next.slice(1, 6))
   })
 
   test('the ghost shows where a hard drop would land, in visible rows', () => {

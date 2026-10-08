@@ -96,7 +96,7 @@ export type Action = {
 export type Clearing = { readonly startedAt: number; readonly until: number; readonly turn: 1 | -1 | 0; readonly hold: boolean }
 
 /** How many of the pieces to come a preview shows. */
-export const PREVIEW_SIZE = 3
+export const PREVIEW_SIZE = 5
 
 /** The queue never runs this short: a bag is appended while it is. */
 const QUEUE_FLOOR = KINDS.length
