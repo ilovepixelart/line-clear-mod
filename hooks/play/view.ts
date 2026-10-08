@@ -12,8 +12,8 @@ export type Segment = { readonly text: string; readonly color?: Color; readonly 
 /** One terminal line: segments side by side. */
 export type Line = readonly Segment[]
 
-/** A filled cell: two narrow half blocks, a tile with a seam either side. */
-export const CELL = '▐▌'
+/** A filled cell: two full blocks, square in most terminal fonts (half blocks draw as thin bars in some). */
+export const CELL = '██'
 /** Where a hard drop would land the falling piece. */
 export const GHOST = '░░'
 /** An empty cell of the well. */
