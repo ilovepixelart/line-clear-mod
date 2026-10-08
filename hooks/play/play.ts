@@ -1,7 +1,7 @@
 import type { ClientKeyEvent, ClientPointerEvent } from 'claude-code'
 
 import Game from '../game'
-import type { GameState, Input } from '../game'
+import type { Action, GameState, Input } from '../game'
 import { inputOfHotkey, pressOf, pressesOf } from './keys'
 import type { LastKey } from './keys'
 
@@ -35,8 +35,8 @@ export function startLevelOf(value: unknown): number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_START_LEVEL ? value : 1
 }
 
-/** The last lock that cleared rows: when, on the frame clock, and how many rows. */
-export type Clear = { readonly at: number; readonly rows: number }
+/** The last lock worth calling out: when, on the frame clock, what it did, and the level it took the game to, if a new one. */
+export type Clear = { readonly at: number; readonly action: Action; readonly level: number | null }
 
 /** The game region's own state, kept by the Client between frames. */
 export type Play = {
@@ -102,15 +102,19 @@ function started(play: Play, outside: Outside): Play {
   return { ...play, game: Game.newGame(seed, { startMs: play.now, startLevel: startLevelOf(outside.startLevel) }), autoPaused: false, reported: false, clear: null, bestBefore: outside.best }
 }
 
-/** `after` with its clear noted when the game in it cleared rows since `before`. */
+/** `after` with its last lock noted when the game in it made one worth calling out since `before`: a clear or a spin. */
 function noted(before: Play, after: Play): Play {
   const was = before.game
   const { game } = after
-  if (was === null || game === null || game === was || game.lines <= was.lines) {
+  const action = game?.lastAction
+  if (was === null || game === null || action === null || action === undefined || action === was.lastAction) {
+    return after
+  }
+  if (action.rows === 0 && action.spin === 'none') {
     return after
   }
 
-  return { ...after, clear: { at: after.now, rows: game.lastClear.length } }
+  return { ...after, clear: { at: after.now, action, level: game.level > was.level ? game.level : null } }
 }
 
 function applied(play: Play, inputs: readonly Input[]): Play {

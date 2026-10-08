@@ -1,10 +1,10 @@
 import type { ClientElements, Color, RenderElement } from 'claude-code'
 
 import Game from '../game'
-import type { GameState, Kind, Point } from '../game'
+import type { Action, GameState, Kind, Point } from '../game'
 import { COLORS, GHOST_COLORS, PIECE_COLORS } from './palette'
 import { TICK_MS, focusOf } from './play'
-import type { Focus, Outside, Play } from './play'
+import type { Clear, Focus, Outside, Play } from './play'
 
 /** A run of text drawn in one style. */
 export type Segment = { readonly text: string; readonly color?: Color; readonly backgroundColor?: Color; readonly dimColor?: true; readonly bold?: true }
@@ -26,8 +26,30 @@ const WELL = WELL_INNER + 2
 
 /** How long a clear is called out in the well's top edge. */
 export const CALLOUT_MS = 1_500
-/** What a clear of one to four rows is called. */
+/** What a clear of one to four rows is called; with a spin, the word follows the spin's. */
 export const CALLOUTS: Readonly<Record<number, string>> = { 1: 'single', 2: 'double', 3: 'triple', 4: 'four at once!' }
+
+/** The words a lock is called by in the well's top edge: all clear, a spin and its rows, or the rows alone. */
+function calloutOf(action: Action): string {
+  if (action.perfect) {
+    return 'all clear!'
+  }
+  const spin = { none: [], mini: ['mini spin'], spin: ['spin'] }[action.spin]
+
+  return [...spin, ...(action.rows > 0 ? [CALLOUTS[action.rows]!] : [])].join(' ')
+}
+
+/** The extras of a lock, for the bottom edge, in full and short: back to back, the combo count, a new level. */
+function extrasOf(clear: Clear): { full: string[]; short: string[] } {
+  const { action, level } = clear
+  const combo = action.combo > 0 ? [`combo ${action.combo}`] : []
+  const levelUp = level === null ? [] : [`level ${level}`]
+
+  return {
+    full: [...(action.backToBack ? ['back to back'] : []), ...combo, ...levelUp],
+    short: [...(action.backToBack ? ['b2b'] : []), ...combo, ...levelUp],
+  }
+}
 
 /** The new best card's title, in the two looks it twinkles between. */
 export const NEW_BEST = ['✦ new best ✦', '✧ new best ✧'] as const
@@ -221,15 +243,33 @@ function boardRows(play: Play): Line[] {
 
 /** The well's top edge, with the last clear called out in it for CALLOUT_MS. */
 function wellTop(play: Play): Line {
-  const { clear } = play
-  const word = clear === null || play.now - clear.at >= CALLOUT_MS ? undefined : CALLOUTS[clear.rows]
-  if (word === undefined) {
-    return [boxTop(WELL_INNER)]
-  }
-  const label = ` ${word} `
-  const left = Math.floor((WELL_INNER - label.length) / 2)
+  const clear = shownClear(play)
 
-  return [plain(`╭${'─'.repeat(left)}`, COLORS.frame), { text: label, color: COLORS.callout, bold: true }, plain(`${'─'.repeat(WELL_INNER - left - label.length)}╮`, COLORS.frame)]
+  return clear === null ? [boxTop(WELL_INNER)] : edge('╭', '╮', calloutOf(clear.action))
+}
+
+/** The well's bottom edge, with the last lock's extras called out in it for CALLOUT_MS: as many as fit, full words when all do. */
+function wellBottom(play: Play): Line {
+  const clear = shownClear(play)
+  if (clear === null) {
+    return [boxBottom(WELL_INNER)]
+  }
+  const fits = (words: string[]) => words.join(' · ').length + 2 <= WELL_INNER
+  const { full, short } = extrasOf(clear)
+  const words = fits(full) ? full : short.filter((_, at) => fits(short.slice(0, at + 1)))
+
+  return words.length === 0 ? [boxBottom(WELL_INNER)] : edge('╰', '╯', words.join(' · '))
+}
+
+/** The last lock worth calling out, while it is called out; null otherwise. */
+const shownClear = (play: Play) => (play.clear === null || play.now - play.clear.at >= CALLOUT_MS ? null : play.clear)
+
+/** A well edge with `text` in its middle, in the callout color. */
+function edge(left: string, right: string, text: string): Line {
+  const label = ` ${text} `
+  const before = Math.floor((WELL_INNER - label.length) / 2)
+
+  return [plain(`${left}${'─'.repeat(before)}`, COLORS.frame), { text: label, color: COLORS.callout, bold: true }, plain(`${'─'.repeat(WELL_INNER - before - label.length)}${right}`, COLORS.frame)]
 }
 
 /** The board with a card laid across its middle rows: a blank row above and below the text. */
@@ -253,7 +293,7 @@ function withCard(rows: Line[], card: Card | null): Line[] {
 }
 
 function well(play: Play, outside: Outside): Line[] {
-  return [wellTop(play), ...withCard(boardRows(play), cardOf(play, outside)).map(line => boxed(line)), [boxBottom(WELL_INNER)]]
+  return [wellTop(play), ...withCard(boardRows(play), cardOf(play, outside)).map(line => boxed(line)), wellBottom(play)]
 }
 
 const widthOf = (line: Line) => line.reduce((sum, segment) => sum + segment.text.length, 0)

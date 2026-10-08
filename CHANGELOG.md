@@ -28,9 +28,11 @@ release may change behaviour.
 - A lock that clears rows holds the next piece back for 200 ms while the
   rows light up and empty from the middle out; moves made meanwhile are
   dropped, and the last turn and a hold are done as the next piece enters.
-  The clear is called out in the well's top edge for 1.5 s: `single`,
-  `double`, `triple` or `four at once!`. Both run on the frame clock, so no
-  extra timer.
+  Both run on the frame clock, so no extra timer.
+- Callouts for 1.5 s in the well's edges, in the game's own words: the top
+  edge names the lock (`single`, `double`, `triple`, `four at once!`,
+  `spin double`, `mini spin single`, `all clear!`), the bottom edge its
+  extras (`back to back`, `combo 2`, `level 3`).
 - A new best is an event: a game that beats the best it started against
   ends on a gold card, `✦ new best ✦` twinkling every 250 ms, with the score
   and how far it beat the old best; while the score in play is ahead, the

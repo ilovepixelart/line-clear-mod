@@ -2,6 +2,7 @@ import { describe, expect, test, tier } from 'claude-code/testing'
 
 import Game from '../../hooks/game'
 import Play from '../../hooks/play'
+import type { GameState, Piece } from '../../hooks/game'
 import type { Play as PlayState } from '../../hooks/play'
 import { boardFrom } from '../fixtures/board'
 import { gameWith } from '../fixtures/game'
@@ -11,15 +12,18 @@ tier('user')
 const AWAY = { paneFocused: false, seedBase: 0, best: 0 }
 const CLICK = { type: 'down', x: 0, y: 0 } as const
 
-/** A clicked region at time 0 whose falling piece is an I over `rows` rows of nine cells, open in column 9. */
-function readyToClear(rows: number): PlayState {
-  const clicked = Play.pointed(Play.startPlay(0), CLICK, AWAY)
+/** A clicked region at time 0 playing `game`. */
+const playing = (game: GameState): PlayState => ({ ...Play.pointed(Play.startPlay(0), CLICK, AWAY), game })
 
-  return { ...clicked, game: gameWith('I', boardFrom(...Array.from({ length: rows }, () => '#########.'))) }
+/** A clicked region at time 0 whose falling piece is an I over `rows` rows of nine cells, open in column 9, under the `above` rows. */
+function readyToClear(rows: number, above: string[] = [], extra: Partial<GameState> = {}): PlayState {
+  return playing(gameWith('I', boardFrom(...above, ...Array.from({ length: rows }, () => '#########.')), extra))
 }
 
 /** The I stood up, taken to column 9 and hard dropped: it fills the open column and clears `rows` rows. */
-const cleared = (rows: number) => Play.keyed(readyToClear(rows), { key: 'wddddx' }, AWAY)
+const cleared = (rows: number, above: string[] = [], extra: Partial<GameState> = {}) => Play.keyed(readyToClear(rows, above, extra), { key: 'wddddx' }, AWAY)
+/** A row with one cell, left above the cleared rows so a clear does not empty the well. */
+const CELL_ABOVE = ['#.........']
 
 function frames(play: PlayState, count: number): PlayState {
   let current = play
@@ -36,6 +40,9 @@ const WELL_AT = 12
 /** The well's inner text, visible row by visible row. */
 const wellRows = (play: PlayState) => screen(play).slice(1, 1 + Game.VISIBLE_ROWS).map(line => Play.textOf(line).slice(WELL_AT + 1, WELL_AT + 21))
 const wellTop = (play: PlayState) => Play.textOf(screen(play)[0]!).slice(WELL_AT, WELL_AT + 22)
+const wellBottom = (play: PlayState) => Play.textOf(screen(play)[1 + Game.VISIBLE_ROWS]!).slice(WELL_AT, WELL_AT + 22)
+const PLAIN_TOP = `╭${'─'.repeat(20)}╮`
+const PLAIN_BOTTOM = `╰${'─'.repeat(20)}╯`
 const litSegments = (play: PlayState) => screen(play).flat().filter(segment => segment.color === Play.COLORS.flash)
 
 const I_LEFT = '· · · · · · · · · ██'
@@ -106,7 +113,7 @@ describe('a line clear on the frame clock', () => {
 
 describe('the callout', () => {
   test('one to four rows are called single, double, triple and four at once!, in the well\'s top edge', () => {
-    expect([1, 2, 3, 4].map(rows => wellTop(cleared(rows)))).toEqual([
+    expect([1, 2, 3, 4].map(rows => wellTop(cleared(rows, CELL_ABOVE)))).toEqual([
       '╭────── single ──────╮',
       '╭────── double ──────╮',
       '╭────── triple ──────╮',
@@ -120,8 +127,39 @@ describe('the callout', () => {
     expect(wellTop(frames(play, 30))).toBe(`╭${'─'.repeat(20)}╮`)
   })
 
+  test('a clear that empties the well is called all clear!', () => {
+    expect(wellTop(cleared(4))).toBe('╭──── all clear! ────╮')
+  })
+
+  test('a spin is called by its kind and rows: spin double, mini spin single, and spin with no rows', () => {
+    const aboveSlot: Piece = { kind: 'T', rotation: 1, x: 3, y: 19 }
+    const spun = (board: string[], active: Piece) => Play.keyed(playing(gameWith('T', boardFrom(...board), { active, lowestY: 21 })), { key: 'wx' }, AWAY)
+    expect(wellTop(spun(['####......', '###...####', '####.#####'], aboveSlot))).toBe('╭─── spin double ────╮')
+    expect(wellTop(spun(['####......', '###...###.', '####.####.'], aboveSlot))).toBe('╭─────── spin ───────╮')
+    expect(wellTop(spun(['..........', '.#########'], { kind: 'T', rotation: 0, x: 0, y: 19 }))).toBe('╭─ mini spin single ─╮')
+  })
+
+  test('back to back and a combo are called in the well\'s bottom edge', () => {
+    expect(wellBottom(cleared(4, CELL_ABOVE, { backToBack: true }))).toBe('╰─── back to back ───╯')
+    expect(wellBottom(cleared(1, CELL_ABOVE, { combo: 2 }))).toBe('╰───── combo 3 ──────╯')
+    expect(wellBottom(cleared(1, CELL_ABOVE))).toBe(PLAIN_BOTTOM)
+  })
+
+  test('when the full words do not fit the bottom edge, back to back is called b2b', () => {
+    expect(wellBottom(cleared(4, CELL_ABOVE, { backToBack: true, combo: 1 }))).toBe('╰── b2b · combo 2 ───╯')
+  })
+
+  test('extras that just fit the edge are all shown', () => {
+    // ' combo 12 · level 3 ' is exactly the 20 columns of the edge
+    expect(wellBottom(cleared(1, CELL_ABOVE, { combo: 11, lines: 19, level: 2 }))).toBe('╰ combo 12 · level 3 ╯')
+  })
+
+  test('a clear that takes the game up a level calls the new level in the bottom edge', () => {
+    expect(wellBottom(cleared(1, CELL_ABOVE, { lines: 9 }))).toBe('╰───── level 2 ──────╯')
+  })
+
   test('a new game starts with no callout', () => {
     const over = { ...cleared(2), game: { ...cleared(2).game!, phase: 'over' as const, active: null } }
-    expect(wellTop(Play.pointed(over, CLICK, AWAY))).toBe(`╭${'─'.repeat(20)}╮`)
+    expect(wellTop(Play.pointed(over, CLICK, AWAY))).toBe(PLAIN_TOP)
   })
 })
