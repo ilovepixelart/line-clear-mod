@@ -1,4 +1,4 @@
 {
-  "description": "A falling-block line-clearing game: the pure game engine (the pane comes later)",
-  "modules": ["./register.ts"]
+  "description": "A falling-block line-clearing game in a pane",
+  "modules": ["./register.tsx"]
 }

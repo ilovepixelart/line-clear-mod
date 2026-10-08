@@ -109,7 +109,7 @@ function cardOf(play: Play, outside: Outside): string[] | null {
     return ['click to play']
   }
   if (game === null) {
-    return focus === 'pane' ? ['p to play'] : null
+    return [focus === 'pane' ? 'p to play' : 'click to play']
   }
 
   return game.phase === 'paused' ? ['paused', 'p resumes'] : null

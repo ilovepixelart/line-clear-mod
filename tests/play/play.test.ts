@@ -161,43 +161,50 @@ describe('focus inferred from silence', () => {
 
 describe('the focused pane and its Buttons', () => {
   test('the pane has the keys while it says it is focused, and never goes idle', () => {
-    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, input: 'pause' }], PANE)
+    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, key: 'p' }], PANE)
     expect(Play.focusOf(play, PANE)).toBe('pane')
     const later = frames(play, 10_000, PANE)
     expect(later.game?.phase).toBe('playing')
   })
 
   test('the game pauses on the frame after the pane lets go, and resumes when it has the keys again', () => {
-    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, input: 'pause' }], PANE)
+    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, key: 'p' }], PANE)
     const away = Play.ticked(play, AWAY)
     expect(away.game?.phase).toBe('paused')
     expect(Play.ticked(away, PANE).game?.phase).toBe('playing')
   })
 
   test('each press applies once, however often the same presses come again', () => {
-    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, input: 'pause' }], PANE)
+    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, key: 'p' }], PANE)
     const presses = [
-      { seq: 1, input: 'pause' },
-      { seq: 2, input: 'left' },
-      { seq: 3, input: 'left' },
+      { seq: 1, key: 'p' },
+      { seq: 2, key: 'a' },
+      { seq: 3, key: 'a' },
     ] as const
     const once = Play.pressed(play, presses, PANE)
     expect(columnOf(once)).toBe(columnOf(play)! - 2)
     expect(Play.pressed(once, presses, PANE)).toBe(once)
-    expect(columnOf(Play.pressed(once, [...presses, { seq: 4, input: 'right' }], PANE))).toBe(columnOf(play)! - 1)
+    expect(columnOf(Play.pressed(once, [...presses, { seq: 4, key: 'd' }], PANE))).toBe(columnOf(play)! - 1)
   })
 
   test('presses made before the region started are not its to apply', () => {
     const play = Play.startPlay(5)
-    expect(Play.pressed(play, [{ seq: 4, input: 'pause' }, { seq: 5, input: 'pause' }], PANE)).toBe(play)
-    expect(Play.pressed(play, [{ seq: 6, input: 'pause' }], PANE).game?.phase).toBe('playing')
+    expect(Play.pressed(play, [{ seq: 4, key: 'p' }, { seq: 5, key: 'p' }], PANE)).toBe(play)
+    expect(Play.pressed(play, [{ seq: 6, key: 'p' }], PANE).game?.phase).toBe('playing')
+  })
+
+  test('a press whose key is no hotkey moves nothing', () => {
+    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, key: 'p' }], PANE)
+    const after = Play.pressed(play, [{ seq: 2, key: 'z' }, { seq: 3, key: 'left' }], PANE)
+    expect(after.game).toBe(play.game)
+    expect(after.seq).toBe(3)
   })
 
   test('with no game running only pause starts one', () => {
     const play = Play.startPlay(0)
-    expect(Play.pressed(play, [{ seq: 1, input: 'left' }], PANE).game).toBeNull()
-    expect(Play.pressed(play, [{ seq: 1, input: 'hardDrop' }], PANE).game).toBeNull()
-    expect(Play.pressed(play, [{ seq: 1, input: 'pause' }], PANE).game?.phase).toBe('playing')
+    expect(Play.pressed(play, [{ seq: 1, key: 'a' }], PANE).game).toBeNull()
+    expect(Play.pressed(play, [{ seq: 1, key: 'x' }], PANE).game).toBeNull()
+    expect(Play.pressed(play, [{ seq: 1, key: 'p' }], PANE).game?.phase).toBe('playing')
   })
 })
 
@@ -222,7 +229,7 @@ describe('game over', () => {
 
   test('from the pane, pause plays again and other presses do nothing', () => {
     const over = { ...toppedOut(clicked()), reported: true }
-    expect(Play.pressed(over, [{ seq: 1, input: 'hardDrop' }], PANE).game).toBe(over.game)
-    expect(Play.pressed(over, [{ seq: 1, input: 'pause' }], PANE).game?.score).toBe(0)
+    expect(Play.pressed(over, [{ seq: 1, key: 'x' }], PANE).game).toBe(over.game)
+    expect(Play.pressed(over, [{ seq: 1, key: 'p' }], PANE).game?.score).toBe(0)
   })
 })

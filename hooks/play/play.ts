@@ -2,7 +2,7 @@ import type { ClientKeyEvent, ClientPointerEvent } from 'claude-code'
 
 import Game from '../game'
 import type { GameState, Input } from '../game'
-import { inputsOfKey } from './keys'
+import { inputOfHotkey, inputsOfKey } from './keys'
 
 /** The frame clock's period: the game moves on this much engine time each frame. */
 export const TICK_MS = 50
@@ -14,8 +14,8 @@ export const TICK_MS = 50
  */
 export const IDLE_MS = 2_000
 
-/** One press of a pane Button, numbered so a redraw never applies it twice. */
-export type Press = { readonly seq: number; readonly input: Input }
+/** One press of a pane Button, by its hotkey letter, numbered so a redraw never applies it twice. */
+export type Press = { readonly seq: number; readonly key: string }
 
 /**
  * Who has the keyboard: the clicked game region (inferred), the pane's
@@ -126,7 +126,8 @@ export function keyed(play: Play, event: ClientKeyEvent, outside: Outside): Play
 }
 
 /**
- * The pane Buttons' presses not yet applied, in order. With no game running,
+ * The pane Buttons' presses not yet applied, in order; a key that is no
+ * hotkey does nothing. With no game running,
  * pause starts one (the keyboard's way to play again) and the rest do nothing.
  */
 export function pressed(play: Play, presses: readonly Press[], outside: Outside): Play {
@@ -135,7 +136,7 @@ export function pressed(play: Play, presses: readonly Press[], outside: Outside)
     return play
   }
   let current: Play = synced({ ...play, seq: Math.max(...fresh.map(press => press.seq)) }, outside)
-  for (const { input } of fresh) {
+  for (const input of fresh.flatMap(press => inputOfHotkey(press.key) ?? [])) {
     if (isRunning(current.game)) {
       current = applied(current, [input])
     } else if (input === 'pause') {
