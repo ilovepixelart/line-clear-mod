@@ -101,7 +101,7 @@ inputs always replay the same game.
   level 15's 7 ms.
 - **Lock delay.** A resting piece locks after 500 ms. Each of the first 15
   moves or turns made while resting restarts the delay, and the 16th locks the
-  piece at once; reaching a new lowest row restores all 15.
+  piece at once; reaching a new lowest row with any cell restores all 15.
 - **Score.** A lock that clears 1, 2, 3 or 4 rows scores 100, 300, 500 or 800
   times the level it was made at. A soft drop scores 1 a row, a hard drop 2.
   No combo, back-to-back or spin bonuses.

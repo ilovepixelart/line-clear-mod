@@ -53,7 +53,7 @@ export type GameState = {
   readonly lockAt: number | null
   /** Moves and turns made while resting since the piece reached its lowest row. */
   readonly lockResets: number
-  /** The lowest row the piece's box has reached. */
+  /** The lowest row any of the piece's cells has reached. */
   readonly lowestY: number
   /** When the game was paused, while it is. */
   readonly pausedAt: number | null
@@ -80,6 +80,9 @@ function refilled(queue: readonly Kind[], random: number): { queue: Kind[]; rand
   return { queue: next, random: state }
 }
 
+/** The lowest row the piece's cells are in. */
+const bottomOf = (piece: Piece) => Math.max(...pieceCells(piece).map(({ y }) => y))
+
 const isResting = (board: Board, piece: Piece) => !fits(board, { ...piece, y: piece.y + 1 })
 
 function ended(state: GameState, over: 'block-out' | 'lock-out'): GameState {
@@ -104,7 +107,7 @@ function spawned(state: GameState, kind: Kind, at: number): GameState {
     fallAt: at,
     lockAt: isResting(state.board, piece) ? at : null,
     lockResets: 0,
-    lowestY: piece.y,
+    lowestY: bottomOf(piece),
   }
 }
 
@@ -145,10 +148,11 @@ function locked(state: GameState, at: number): GameState {
  * spent more than LOCK_RESET_CAP, when it locks at once.
  */
 function movedTo(state: GameState, piece: Piece, at: number, isPress: boolean): GameState {
-  const isLower = piece.y > state.lowestY
+  const bottom = bottomOf(piece)
+  const isLower = bottom > state.lowestY
   const wasResting = state.lockAt !== null
   const lockResets = isLower ? 0 : state.lockResets + (isPress && wasResting ? 1 : 0)
-  const moved = { ...state, active: piece, lowestY: Math.max(piece.y, state.lowestY), lockResets }
+  const moved = { ...state, active: piece, lowestY: Math.max(bottom, state.lowestY), lockResets }
   if (!isResting(state.board, piece)) {
     // a piece that leaves a rest starts its gravity clock there, not at its last fall
     return { ...moved, lockAt: null, fallAt: wasResting ? at : state.fallAt }

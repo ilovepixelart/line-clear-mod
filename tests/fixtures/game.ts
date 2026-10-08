@@ -9,7 +9,7 @@ export function gameWith(kind: Kind, board: Board = Game.emptyBoard(), extra: Pa
   const fresh = Game.newGame(1, { startLevel: extra.startLevel ?? 1 })
   const active = Game.spawnPiece(kind)
 
-  return { ...fresh, board, active, lowestY: active.y, ...extra }
+  return { ...fresh, board, active, lowestY: Math.max(...Game.pieceCells(active).map(({ y }) => y)), ...extra }
 }
 
 /** Steps through inputs, all at one time. */

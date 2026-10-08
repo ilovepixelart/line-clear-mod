@@ -203,6 +203,23 @@ describe('lock delay', () => {
     expect(game.lockAt).toBe(0)
   })
 
+  test('the lowest row is the cells\' own: a turn that lowers a cell without lowering the box gives the moves back', () => {
+    // a T resting flat on the floor row, which has a hole under its middle; a turn
+    // drops its middle cell into the hole while its box stays put
+    const floor = boardFrom('####.#####')
+    let game = play(gameWith('T', floor), times(20, 'softDrop'))
+    expect(where(game)).toEqual({ rotation: 0, x: 3, y: 19 })
+    for (let i = 1; i <= 14; i++) {
+      game = Game.step(game, i % 2 === 1 ? 'left' : 'right', i)
+    }
+    game = Game.step(game, 'rotateCw', 15)
+    expect(where(game)).toEqual({ rotation: 1, x: 3, y: 19 })
+    // 16 presses in all: without the moves back, this one would lock the T
+    game = Game.step(game, 'rotateCcw', 16)
+    expect(game.active?.kind, 'still falling').toBe('T')
+    expect(bottomRows(game.board, 1)[0]).toBe('####.#####')
+  })
+
   test('reaching a new lowest row gives the piece its 15 moves back', () => {
     // a ledge in columns 0 to 3: the O rests on it in columns 3 and 4, one row up
     let game = play(gameWith('O', boardFrom('####......')), ['left', ...times(17, 'softDrop')])
