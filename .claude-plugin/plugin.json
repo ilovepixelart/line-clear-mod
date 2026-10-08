@@ -1,0 +1,22 @@
+{
+  "name": "line-clear",
+  "displayName": "Line Clear",
+  "version": "0.1.0",
+  "description": "A falling-block line-clearing game to play in a pane while Claude works.",
+  "author": {
+    "name": "ilovepixelart",
+    "email": "ilovepixelart@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/ilovepixelart/line-clear-mod#readme",
+  "repository": "https://github.com/ilovepixelart/line-clear-mod",
+  "license": "MIT",
+  "keywords": [
+    "game",
+    "falling-blocks",
+    "puzzle",
+    "tui",
+    "function-hooks",
+    "claude-code-mod"
+  ],
+  "types": "./types/index.d.ts"
+}

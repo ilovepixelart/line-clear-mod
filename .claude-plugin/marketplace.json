@@ -1,0 +1,15 @@
+{
+  "name": "line-clear-mod",
+  "description": "Claude Code mods by ilovepixelart: line-clear, a falling-block game to play while Claude works.",
+  "owner": {
+    "name": "ilovepixelart",
+    "email": "ilovepixelart@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "line-clear",
+      "source": "./",
+      "description": "A falling-block line-clearing game to play in a pane while Claude works."
+    }
+  ]
+}
