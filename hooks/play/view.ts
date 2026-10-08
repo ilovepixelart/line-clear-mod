@@ -47,6 +47,9 @@ export const STATUS: Readonly<Record<Focus, string>> = {
   none: 'click to play · or ctrl+x tab, then w a s d',
 }
 
+/** The status line while the person has paused the game: the board stays in view, so no card says it. */
+export const PAUSED = 'paused · p resumes'
+
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g
 
 /** Text safe to draw: a control character in a Text child unmounts the region for good. */
@@ -150,7 +153,7 @@ function cardOf(play: Play, outside: Outside): Card | null {
     return card(focus === 'pane' ? 'p to play' : 'click to play')
   }
 
-  return game.phase === 'paused' ? card('paused', 'p resumes') : null
+  return null
 }
 
 const has = (points: readonly Point[], x: number, y: number) => points.some(point => point.x === x && point.y === y)
@@ -196,20 +199,24 @@ function boardRows(play: Play): Line[] {
   const board = game === null ? null : flash === null ? Game.boardOf(game) : unclearedOf(game, flash.rows)
   const ghost = game === null || flash !== null ? [] : Game.ghostOf(game)
   const kind = game?.active?.kind
+  // paused, the board stays in view, dimmed, rather than under a card
+  const dim = game?.phase === 'paused' ? { dimColor: true as const } : {}
 
   return Array.from({ length: Game.VISIBLE_ROWS }, (_, y) =>
-    Array.from({ length: Game.WIDTH }, (_, x): Segment => {
-      const cell = board?.[y]?.[x] ?? null
-      if (cell === 'lit') {
-        return isSwept(x, flash!.swept) ? plain(EMPTY, COLORS.grid) : { text: CELL, color: COLORS.flash }
-      }
-      if (cell !== null) {
-        return { text: CELL, color: PIECE_COLORS[cell] }
-      }
-
-      return kind !== undefined && has(ghost, x, y) ? { text: GHOST, color: GHOST_COLORS[kind] } : plain(EMPTY, COLORS.grid)
-    }),
+    Array.from({ length: Game.WIDTH }, (_, x): Segment => ({ ...cellAt(x, y), ...dim })),
   )
+
+  function cellAt(x: number, y: number): Segment {
+    const cell = board?.[y]?.[x] ?? null
+    if (cell === 'lit') {
+      return isSwept(x, flash!.swept) ? plain(EMPTY, COLORS.grid) : { text: CELL, color: COLORS.flash }
+    }
+    if (cell !== null) {
+      return { text: CELL, color: PIECE_COLORS[cell] }
+    }
+
+    return kind !== undefined && has(ghost, x, y) ? { text: GHOST, color: GHOST_COLORS[kind] } : plain(EMPTY, COLORS.grid)
+  }
 }
 
 /** The well's top edge, with the last clear called out in it for CALLOUT_MS. */
@@ -272,7 +279,8 @@ export function screenOf(play: Play, outside: Outside, columns: number): Line[] 
   const gap = plain(' '.repeat(GAP))
   const rows = middle.map((line, y) => [margin, ...filled(left[y], PANEL), gap, ...line, gap, ...filled(right[y], PANEL)])
   const focus = focusOf(play, outside)
-  const status = { text: STATUS[focus], color: focus === 'none' ? COLORS.away : COLORS.keys, bold: true as const }
+  const isPaused = play.game?.phase === 'paused' && focus !== 'none'
+  const status = { text: isPaused ? PAUSED : STATUS[focus], color: focus === 'none' ? COLORS.away : COLORS.keys, bold: true as const }
 
   return [...rows, [margin, status]].map(trimmed)
 }

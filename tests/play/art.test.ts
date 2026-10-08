@@ -1,5 +1,6 @@
 import { describe, expect, test, tier } from 'claude-code/testing'
 
+import Game from '../../hooks/game'
 import Play from '../../hooks/play'
 import type { Line, Outside, Play as PlayState } from '../../hooks/play'
 import { ansi256, closestPair, rgbOf } from '../fixtures/color'
@@ -192,7 +193,7 @@ describe('who has the keys, on the status line and the card', () => {
     expect(cardOf(Play.startPlay(0), PANE)).toEqual(['p to play'])
     expect(cardOf(midGame(), AWAY)).toEqual([])
     expect(cardOf(frames(midGame(), 40), AWAY)).toEqual(['click to play'])
-    expect(cardOf(Play.keyed(midGame(), { key: 'p' }, AWAY), AWAY)).toEqual(['paused', 'p resumes'])
+    expect(cardOf(Play.keyed(midGame(), { key: 'p' }, AWAY), AWAY)).toEqual([])
     const over = { ...toppedOut(midGame()), bestBefore: 1_000_000 }
     expect(cardOf(over, AWAY)).toEqual(['game over', `score ${over.game!.score}`, 'click to play again'])
     expect(cardOf({ ...over, region: false }, PANE)).toEqual(['game over', `score ${over.game!.score}`, 'p to play again'])
@@ -227,6 +228,28 @@ describe('who has the keys, on the status line and the card', () => {
     expect(label({ ...mid, bestBefore: 1_000 })).toBe('best')
     expect(label({ ...mid, bestBefore: 10 })).toBe('best  new!')
     expect(label({ ...mid, bestBefore: mid.game!.score })).toBe('best')
+  })
+
+  test('paused, the whole board stays in view, dimmed, and the status line says how to resume', () => {
+    const mid = midGame()
+    const paused = Play.keyed(mid, { key: 'p' }, AWAY)
+    expect(statusOf(paused, AWAY)).toBe('paused · p resumes')
+    const rows = (play: PlayState) => Play.screenOf(play, AWAY, 80).slice(1, 1 + Game.VISIBLE_ROWS)
+    const wellText = (play: PlayState) => rows(play).map(line => Play.textOf(line).slice(30, 50))
+    expect(wellText(paused)).toEqual(wellText(mid))
+    // the well's inner columns at 80 wide: a margin of 17, the hold panel and gap of 12, the frame
+    const inWell = (line: Line) => {
+      let at = 0
+      return line.filter(segment => {
+        const start = at
+        at += segment.text.length
+        return start >= 30 && start < 50
+      })
+    }
+    const cells = rows(paused).flatMap(line => inWell(line).filter(segment => segment.text.includes(Play.CELL) || segment.text.includes(Play.GHOST)))
+    expect(cells.length).toBeGreaterThan(0)
+    expect(cells.every(segment => segment.dimColor === true)).toBe(true)
+    expect(rows(mid).flatMap(inWell).some(segment => segment.dimColor === true), 'not dimmed in play').toBe(false)
   })
 
   test('best shows the higher of the stored best and the score in play', () => {

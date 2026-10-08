@@ -119,6 +119,8 @@ inputs always replay the same game.
 - **Game over.** Block out (the next piece has no room to enter) or lock out
   (a piece locks with every cell in the hidden rows).
 - **Pause.** Freezes gravity and the lock delay; ignores every other input.
+  The board stays in view, dimmed, and the status line reads
+  `paused · p resumes`.
 
 The numbers live in [`hooks/game/rules.ts`](hooks/game/rules.ts).
 
