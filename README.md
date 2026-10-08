@@ -5,7 +5,7 @@
 You asked for a refactor. Claude is reading 31 files. You could watch the
 spinner. Or you could clear four rows at once while it works.
 
-![line-clear in a Claude Code pane: Claude writes a long story on the left while a game is played on the right, rows clear and the well calls them out](assets/demo.gif)
+![line-clear in a Claude Code pane, played while Claude makes an orders import idempotent: pieces lock, rows clear with single and combo callouts, the level rises to 2 and the best score updates](assets/demo.gif)
 
 A Claude Code mod. Seven four-cell pieces fall into a well ten wide and
 eighteen deep; fill a row and it goes. The rules are the ones the modern games
