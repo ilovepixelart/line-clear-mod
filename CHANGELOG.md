@@ -20,8 +20,9 @@ release may change behaviour.
   `a d w q s x c p`. The status line says who has the keys; two seconds with
   no key on the clicked well pause the game and show `click to play`, since
   the game cannot observe losing the keys. Hold box, the next three, score,
-  level, lines and best, a dim ghost, and a game-over card that starts the
-  next game on a click (or `p` with the pane focused).
+  level, lines and best, a ghost shaded in the falling piece's own color,
+  and a game-over card that starts the next game on a click (or `p` with the
+  pane focused).
 - The best score is kept across sessions, the only value stored.
 - `openOnTurn` setting, off by default: opens the pane, unfocused, when a
   turn starts.

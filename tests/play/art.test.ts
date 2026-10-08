@@ -100,8 +100,8 @@ describe('the game region at 80 and 120 columns', () => {
     "                                                 │· · · · · · · · · · │",
     "                                     best        │· · · · · · · · · · │",
     "                                     5000        │· · · · · · · · · · │",
-    "                                                 │· · · ░░░░· · · · · │",
-    "                                                 │· · · · ░░░░· · · · │",
+    "                                                 │· · · ▓▓▓▓· · · · · │",
+    "                                                 │· · · · ▓▓▓▓· · · · │",
     "                                                 │· · · · ████· · · · │",
     "                                                 │· · · ████· · · · · │",
     "                                                 ╰────────────────────╯",
@@ -228,14 +228,28 @@ describe('the drawn tree', () => {
 describe('the look', () => {
   const segmentsOf = (play: PlayState) => Play.screenOf(play, AWAY, 80).flat()
 
-  test('the falling piece is tiles in its color; its ghost is shaded and dim in the same color', () => {
+  test('the falling piece is tiles in its color; its ghost is shaded in its ghost color, never dim (dim draws grey)', () => {
     const mid = midGame()
-    const color = Play.PIECE_COLORS[mid.game!.active!.kind]
+    const kind = mid.game!.active!.kind
     const ghosts = segmentsOf(mid).filter(segment => segment.text.includes(Play.GHOST))
     expect(ghosts.length).toBeGreaterThan(0)
-    expect(ghosts.every(segment => segment.color === color && segment.dimColor === true)).toBe(true)
-    const tiles = segmentsOf(mid).filter(segment => segment.text.includes(Play.CELL) && segment.color === color)
+    expect(ghosts.every(segment => segment.color === Play.GHOST_COLORS[kind] && segment.dimColor === undefined)).toBe(true)
+    expect(Play.GHOST).not.toBe(Play.CELL)
+    const tiles = segmentsOf(mid).filter(segment => segment.text.includes(Play.CELL) && segment.color === Play.PIECE_COLORS[kind])
     expect(tiles.every(segment => segment.dimColor === undefined)).toBe(true)
+  })
+
+  test('a ghost color is its piece color 55% of the way from the dark well: #E59BC4 over #1E1E2E is #8B6381', () => {
+    // by hand: 30 + (229 - 30) * 0.55 = 139.45, 30 + (155 - 30) * 0.55 = 98.75, 46 + (196 - 46) * 0.55 = 128.5
+    expect(Play.GHOST_COLORS.I).toBe('#8B6381')
+    for (const kind of ['I', 'O', 'T', 'S', 'Z', 'J', 'L'] as const) {
+      const ghost = Number.parseInt(String(Play.GHOST_COLORS[kind]).slice(1), 16)
+      const piece = Number.parseInt(String(Play.PIECE_COLORS[kind]).slice(1), 16)
+      const channels = (value: number) => [value >> 16, (value >> 8) & 255, value & 255]
+      const [lit, dark] = [channels(piece), channels(ghost)]
+      expect(dark.every((channel, at) => channel < lit[at]!), kind).toBe(true)
+    }
+    expect(new Set(Object.values(Play.GHOST_COLORS)).size).toBe(7)
   })
 
   test('seven distinct piece colors of its own, none a pure primary or secondary', () => {

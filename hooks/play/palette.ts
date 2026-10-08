@@ -17,6 +17,30 @@ export const PIECE_COLORS: Readonly<Record<Kind, Color>> = {
   L: '#B5D97A',
 }
 
+/** The dark well a ghost is mixed toward. */
+const WELL_DARK = '#1E1E2E'
+/** How far a ghost color is from the dark well toward its piece color. */
+const GHOST_STRENGTH = 0.55
+
+const channelsOf = (color: string) => [1, 3, 5].map(at => Number.parseInt(color.slice(at, at + 2), 16))
+const hex = (channels: number[]) => `#${channels.map(channel => channel.toString(16).padStart(2, '0')).join('').toUpperCase()}`
+
+/** `color` mixed toward `base`: 0 is the base, 1 the color. */
+function toward(color: string, base: string, strength: number): Color {
+  const from = channelsOf(base)
+
+  return hex(channelsOf(color).map((channel, at) => Math.round(from[at]! + (channel - from[at]!) * strength))) as Color
+}
+
+/**
+ * Each piece's ghost color: its own color at reduced intensity, so the ghost
+ * reads as that piece but never as a locked one. Not dimColor: Claude Code
+ * draws dim text grey, whatever its color.
+ */
+export const GHOST_COLORS: Readonly<Record<Kind, Color>> = Object.fromEntries(
+  Object.entries(PIECE_COLORS).map(([kind, color]) => [kind, toward(String(color), WELL_DARK, GHOST_STRENGTH)]),
+) as Record<Kind, Color>
+
 export const COLORS = {
   /** The well's frame and the side boxes: the game's own accent. */
   frame: '#7A6FB0',

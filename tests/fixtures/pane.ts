@@ -2,6 +2,8 @@ import type { CommandRunInput, On, RenderPropsOf, UiOpenResult } from 'claude-co
 import type { Engine } from 'claude-code/testing'
 import { mock } from 'claude-code/testing'
 
+import { GHOST } from '../../hooks/play'
+
 export const PLUGIN = 'line-clear'
 export const PANE = 'line-clear'
 
@@ -85,9 +87,9 @@ export async function wellStrings(ui: { drawn: (scope?: { in?: string }) => Prom
 /** Where the ghost's leftmost cell is drawn on the lowest row that holds one, as a character column. */
 export async function ghostColumn(ui: { drawn: (scope?: { in?: string }) => Promise<unknown> }): Promise<number> {
   const lines = await wellLines(ui)
-  const row = lines.findLast(line => line.includes('░'))
+  const row = lines.findLast(line => line.includes(GHOST))
 
-  return row === undefined ? -1 : row.indexOf('░')
+  return row === undefined ? -1 : row.indexOf(GHOST)
 }
 
 export const statusOf = async (ui: { drawn: (scope?: { in?: string }) => Promise<unknown> }) => (await wellLines(ui)).at(-1)?.trim()

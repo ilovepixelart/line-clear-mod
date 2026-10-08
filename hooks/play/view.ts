@@ -2,7 +2,7 @@ import type { ClientElements, Color, RenderElement } from 'claude-code'
 
 import Game from '../game'
 import type { GameState, Kind, Point } from '../game'
-import { COLORS, PIECE_COLORS } from './palette'
+import { COLORS, GHOST_COLORS, PIECE_COLORS } from './palette'
 import { focusOf } from './play'
 import type { Focus, Outside, Play } from './play'
 
@@ -14,8 +14,8 @@ export type Line = readonly Segment[]
 
 /** A filled cell: two full blocks, square in most terminal fonts (half blocks draw as thin bars in some). */
 export const CELL = '██'
-/** Where a hard drop would land the falling piece. */
-export const GHOST = '░░'
+/** Where a hard drop would land the falling piece: shaded, so it never reads as a locked cell. */
+export const GHOST = '▓▓'
 /** An empty cell of the well. */
 export const EMPTY = '· '
 
@@ -117,7 +117,7 @@ function cardOf(play: Play, outside: Outside): string[] | null {
 
 const has = (points: readonly Point[], x: number, y: number) => points.some(point => point.x === x && point.y === y)
 
-/** The well's visible rows: locked cells and the falling piece as tiles, the ghost dim under it. */
+/** The well's visible rows: locked cells and the falling piece as tiles, the ghost shaded under it. */
 function boardRows(game: GameState | null): Line[] {
   const board = game === null ? null : Game.boardOf(game)
   const ghost = game === null ? [] : Game.ghostOf(game)
@@ -130,7 +130,7 @@ function boardRows(game: GameState | null): Line[] {
         return { text: CELL, color: PIECE_COLORS[cell] }
       }
 
-      return kind !== undefined && has(ghost, x, y) ? { text: GHOST, color: PIECE_COLORS[kind], dimColor: true } : plain(EMPTY, COLORS.grid)
+      return kind !== undefined && has(ghost, x, y) ? { text: GHOST, color: GHOST_COLORS[kind] } : plain(EMPTY, COLORS.grid)
     }),
   )
 }
