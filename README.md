@@ -39,11 +39,12 @@ There are two ways to give the game the keys.
 | hold | `c` | `c` |
 | pause | `p` | `p` |
 
-Hold left, right or down and the piece keeps going; hold a drop, a turn,
-hold or pause and it acts once. The game counts a key as held when it comes
-again within 120 ms. Your system waits 225 to 660 ms before it starts
-repeating a held key, so a key held just past that wait can still count
-twice.
+Hold left, right or down and the piece keeps going. A terminal never says
+when a key is let go, only that it came again, so the game counts a key as
+held when it comes again within 120 ms. Your keyboard waits a few hundred
+milliseconds before it starts repeating a held key, so a held drop, turn,
+hold or pause acts twice (on the press, then once when the repeat starts)
+and then stops: holding the drop key never drops piece after piece.
 
 A click starts a game and, after game over, starts the next one; with the
 pane focused, `p` does.
@@ -205,12 +206,17 @@ Or in one line, straight from this repository, following `main`:
 /plugin install line-clear --marketplace ilovepixelart/line-clear-mod
 ```
 
-To stay on one release, add this repository at its tag instead:
-`/plugin marketplace add ilovepixelart/line-clear-mod#line-clear--v0.1.0`.
+To stay on one release, add this repository at its tag instead, then install
+from it:
+
+```
+/plugin marketplace add ilovepixelart/line-clear-mod#line-clear--v0.1.0
+/plugin install line-clear@line-clear-mod
+```
 
 Run `/reload-plugins` (or start a new session) after installing. To take a new
 release later, run `claude plugin update line-clear@ilovepixelart` in your
-shell. Each [release](https://github.com/ilovepixelart/line-clear-mod/releases)
+shell, or `line-clear@line-clear-mod` if you installed from this repository. Each [release](https://github.com/ilovepixelart/line-clear-mod/releases)
 also carries a zip of the plugin for `claude --plugin-url`, and
 [CHANGELOG.md](CHANGELOG.md) lists what each one changed.
 

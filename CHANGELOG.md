@@ -46,9 +46,10 @@ First release. Requires Claude Code 2.1.287 or later.
 - Seven piece colors of the game's own that stay distinct (CIEDE2000 of 12
   or more) for normal vision, protanopia, deuteranopia and tritanopia, and
   keep seven different codes, ghosts too, on a 256-color terminal.
-- A held key acts once for a drop, a turn, hold and pause, and keeps
-  repeating for left, right and down: a key that comes again within 120 ms
-  is a held key's repeat.
+- A held drop, turn, hold or pause stops acting once the key repeats, and
+  left, right and down keep repeating: a key that comes again within 120 ms
+  is a held key's repeat. The keyboard's first repeat comes later than that,
+  so a held key acts twice, then stops.
 - Slide to the wall in one move: shift with left or right, or `A` and `D`,
   on the clicked well.
 - The best score is kept across sessions, the only value stored.
@@ -56,3 +57,5 @@ First release. Requires Claude Code 2.1.287 or later.
   turn starts.
 - `startLevel` setting, 1 by default: the level each game starts at, 1 to
   15.
+
+[0.1.0]: https://github.com/ilovepixelart/line-clear-mod/releases/tag/line-clear--v0.1.0
