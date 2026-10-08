@@ -5,8 +5,80 @@
 A Claude Code mod. Seven four-cell pieces fall into a ten-wide well; fill a
 row and it clears. The game is its own design, with its own look.
 
-Status: in development. The game engine is written and tested; the pane that
-plays it is not built yet, so installing the plugin today shows nothing.
+Status: in development, not released yet.
+
+## How to play
+
+Type `/line-clear` to open the pane. Typed while Claude is working, the
+command waits until the turn ends, so open the pane first and keep it open:
+the game plays while Claude generates and runs tools.
+
+There are two ways to give the game the keys.
+
+- **Click the well.** Arrows, Space and the letters below go to the game.
+  Escape gives the keys back to the prompt.
+- **Keyboard only: ctrl+x tab.** The pane takes the focus and its Buttons'
+  hotkeys play: `a` `d` `w` `q` `s` `x` `c` `p`. Escape gives the keys back.
+
+| Move | Clicked well | Pane hotkey |
+| --- | --- | --- |
+| left, right | left, right arrow, or `a`, `d` | `a`, `d` |
+| turn clockwise | up arrow or `w` | `w` |
+| turn back | `z` or `q` | `q` |
+| soft drop | down arrow or `s` | `s` |
+| hard drop | Space or `x` | `x` |
+| hold | `c` | `c` |
+| pause | `p` | `p` |
+
+A click starts a game and, after game over, starts the next one; with the
+pane focused, `p` does.
+
+The status line under the well always says who has the keys:
+`playing · Esc gives keys back` (the clicked well),
+`keys: w a s d · Esc gives keys back` (the focused pane), or, in the warning
+color, `click to play · or ctrl+x tab, then w a s d`, with a card over the
+well, when the keys go to the prompt.
+
+### Why click to play, and why the keyboard path has no arrows
+
+Claude Code gives a mod's game region the keyboard only after a click on it:
+no command, focus request or keybinding gives it the keys, and Escape never
+reaches it (it hands the keys back). So the game cannot see when it loses the
+keys. It infers it: two seconds with no key and the well takes itself as
+unfocused, pauses, and shows `click to play` again; any key or click resumes
+it. That pause is a guess from silence, not a signal.
+
+Without a mouse, ctrl+x tab focuses the pane, where a Button's hotkey is one
+letter or digit. The arrows and Tab belong to the pane there (they scroll and
+move between Buttons), so a keyboard-only player steers with letters and
+cannot send the game arrows or Space.
+
+### Mid-turn, watch the prompt
+
+A key the game does not have lands on the prompt, and mid-turn some of those
+keys act: Escape at the prompt interrupts Claude, Left opens the background
+agents view, Up pulls back a queued message. Check the status line before
+pressing keys. Press Escape once to leave the game, and do not Tab around the
+focused pane mid-turn: Tab can move the focus onto Claude Code's own stop
+control, where Escape may cancel the turn.
+
+The pane needs 46 columns and 25 rows. Below 46 columns it asks for room.
+
+## Settings
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `openOnTurn` | off | Opens the pane, without taking the keys, each time a turn starts. Claude Code places a pane opened this way only on a terminal 144 columns wide (110 once you have opened line-clear yourself in a session). |
+
+Change it in `/config`, or under `pluginConfigs["line-clear"].options` in
+settings.
+
+## Privacy
+
+Nothing leaves the machine. The mod makes no network call and reads no
+files. It keeps one value across sessions, the best score, as a number in the
+plugin's own store. It hooks no tool, prompt, model or permission event, and
+adds nothing to the transcript.
 
 ## The rules
 
@@ -40,6 +112,11 @@ inputs always replay the same game.
 
 The numbers live in [`hooks/game/rules.ts`](hooks/game/rules.ts).
 
+In the pane, the game's time is the frame clock: each 50 ms frame moves the
+game on 50 ms. When Claude Code draws frames late (measured at about 55 ms a
+frame mid-turn), the game runs that much slower instead of skipping rows.
+Each game's seed comes from the clock when it starts.
+
 ## Install
 
 Requires Claude Code 2.1.287 or later (mods).
@@ -60,7 +137,14 @@ what each release changed.
 
 ## Access
 
-What `claude plugin validate .` reports the module calls: nothing yet.
+What `claude plugin validate .` reports the module hooks and calls:
+
+- hooks: `session.start` (registers `/line-clear`), `command.run`
+  (`line-clear`), `turn.start` (only with `openOnTurn` on), `ui.message` and
+  `ui.render` (its own pane only);
+- calls: `$.command.register`, `$.ui.open`, `$.ui.resolve`, `$.ui.invalidate`,
+  `$.clock.now`, `$.store.get` and `$.store.set` (the best score), and
+  `$.state` for the pane's own Button presses this session.
 
 ## Development
 
