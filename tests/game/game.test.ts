@@ -88,6 +88,15 @@ describe('gravity', () => {
     expect(where(Game.step(game, 'tick', 710))?.y).toBe(4)
   })
 
+  test('a piece that slides off a ledge starts gravity from the slide, not from its last fall', () => {
+    // the O rests on a ledge in columns 0 to 3 from time 0, and at 400 ms slides off it
+    const resting = play(gameWith('O', boardFrom('####......')), ['left', ...times(19, 'softDrop')])
+    const slid = play(resting, ['right', 'right'], 400)
+    expect(where(slid)).toEqual({ rotation: 0, x: 4, y: 21 })
+    expect(where(Game.step(slid, 'tick', 1399))?.y).toBe(21)
+    expect(where(Game.step(slid, 'tick', 1400))?.y).toBe(22)
+  })
+
   test('time passes before the input: a move at 1000 ms happens after the row falls', () => {
     expect(where(Game.step(gameWith('O'), 'left', 1000))).toEqual({ rotation: 0, x: 2, y: 3 })
   })
@@ -176,7 +185,7 @@ describe('lock delay', () => {
     for (let i = 1; i <= 14; i++) {
       game = Game.step(game, i % 2 === 1 ? 'left' : 'right', i)
     }
-    // the 15th counted move takes it off the ledge, one more clears it, and gravity lands it at 1000 ms
+    // the 15th counted move takes it off the ledge at 20 ms, one more clears it, and gravity lands it 1000 ms later
     game = play(game, ['right', 'right'], 20)
     game = Game.step(game, 'tick', 1020)
     expect(where(game)).toEqual({ rotation: 0, x: 4, y: 22 })

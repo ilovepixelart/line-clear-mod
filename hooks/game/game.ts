@@ -145,7 +145,8 @@ function movedTo(state: GameState, piece: Piece, at: number, isPress: boolean): 
   const lockResets = isLower ? 0 : state.lockResets + (isPress && wasResting ? 1 : 0)
   const moved = { ...state, active: piece, lowestY: Math.max(piece.y, state.lowestY), lockResets }
   if (!isResting(state.board, piece)) {
-    return { ...moved, lockAt: null }
+    // a piece that leaves a rest starts its gravity clock there, not at its last fall
+    return { ...moved, lockAt: null, fallAt: wasResting ? at : state.fallAt }
   }
 
   return lockResets > LOCK_RESET_CAP ? locked(moved, at) : { ...moved, lockAt: at }
