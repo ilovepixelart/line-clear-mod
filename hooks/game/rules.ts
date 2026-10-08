@@ -19,6 +19,9 @@ export const BACK_TO_BACK = 1.5
 /** Whether a clear is difficult, for back to back: four rows at once, or a spin that clears rows. */
 export const isDifficult = (rows: number, spin: Spin) => rows === 4 || (rows > 0 && spin !== 'none')
 
+/** Each clear right after another adds this many points times the run's count (the second in a row is 1) times the level. */
+export const COMBO_POINTS = 50
+
 /** Points per row a soft drop moves the piece down. */
 export const SOFT_DROP_POINTS = 1
 

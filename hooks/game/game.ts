@@ -9,6 +9,7 @@ import { spinOf } from './spin'
 import {
   BACK_TO_BACK,
   CLEAR_MS,
+  COMBO_POINTS,
   HARD_DROP_POINTS,
   LOCK_DELAY_MS,
   LOCK_RESET_CAP,
@@ -75,10 +76,12 @@ export type GameState = {
   readonly lastAction: Action | null
   /** Whether the last lock that cleared rows made a difficult clear: the next difficult one scores half again. */
   readonly backToBack: boolean
+  /** Clears in a row less one: -1 after a lock that cleared nothing, 0 after the first clear, 1 after the second. */
+  readonly combo: number
 }
 
 /** What a lock did, for scoring and for calling it out: the rows it cleared, its spin and the points it made. */
-export type Action = { readonly rows: number; readonly spin: Spin; readonly points: number; readonly backToBack: boolean }
+export type Action = { readonly rows: number; readonly spin: Spin; readonly points: number; readonly backToBack: boolean; readonly combo: number }
 
 /** The pause between a lock that clears rows and the next piece. */
 export type Clearing = { readonly startedAt: number; readonly until: number; readonly turn: 1 | -1 | 0; readonly hold: boolean }
@@ -152,7 +155,9 @@ function locked(state: GameState, at: number): GameState {
   const lines = state.lines + cleared
   const difficult = isDifficult(cleared, spin)
   const isBackToBack = difficult && state.backToBack
-  const points = Math.floor(clearScore(cleared, state.level, spin) * (isBackToBack ? BACK_TO_BACK : 1))
+  const combo = cleared === 0 ? -1 : state.combo + 1
+  const comboPoints = combo > 0 ? COMBO_POINTS * combo * state.level : 0
+  const points = Math.floor(clearScore(cleared, state.level, spin) * (isBackToBack ? BACK_TO_BACK : 1)) + comboPoints
 
   const scored = {
     ...state,
@@ -162,8 +167,9 @@ function locked(state: GameState, at: number): GameState {
     level: levelFor(state.startLevel, lines),
     lastClear: rows,
     turnKick: null,
-    lastAction: { rows: cleared, spin, points, backToBack: isBackToBack },
+    lastAction: { rows: cleared, spin, points, backToBack: isBackToBack, combo },
     backToBack: cleared === 0 ? state.backToBack : difficult,
+    combo,
   }
   if (cleared === 0) {
     return nextPiece(scored, at)
@@ -369,6 +375,7 @@ export function newGame(seed: number, options: GameOptions = {}): GameState {
     turnKick: null,
     lastAction: null,
     backToBack: false,
+    combo: -1,
   }
 
   return nextPiece(empty, options.startMs ?? 0)

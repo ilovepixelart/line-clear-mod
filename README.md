@@ -125,6 +125,9 @@ inputs always replay the same game.
 - **Back to back.** A difficult clear (four rows at once, or a spin that
   clears rows) right after another scores half again. A single, double or
   triple ends the run; a lock that clears nothing does not.
+- **Combos.** Each clear right after another adds 50 times the run's count
+  times the level: the second clear in a row is combo 1, the third combo 2.
+  A lock that clears nothing ends the run.
 - **Levels.** Up one every 10 cleared rows from the start level.
 - **Game over.** Block out (the next piece has no room to enter) or lock out
   (a piece locks with every cell in the hidden rows).

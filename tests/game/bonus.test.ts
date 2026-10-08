@@ -29,12 +29,13 @@ const aboveSlot: Piece = { kind: 'T', rotation: 1, x: 3, y: 19 }
 const spinDouble = (extra: Partial<GameState> = {}) => play(gameWith('T', doubleSlot, { active: aboveSlot, lowestY: 21, ...extra }), ['rotateCw', 'hardDrop'])
 
 describe('back to back', () => {
-  test('two fours in a row: the second scores half again, 1200', () => {
+  test('two fours in a row: the second scores half again, 1200, and 50 as combo 1', () => {
     // eight rows open in column 9; the second I comes back from hold once the first clear is done
     const first = play(iOver(8, { hold: 'I' }), intoColumn9)
     expect(first.lastAction).toMatchObject({ rows: 4, points: 800, backToBack: false })
     const second = play(Game.step(first, 'tick', Game.CLEAR_MS), ['hold', ...intoColumn9], Game.CLEAR_MS)
-    expect(second.lastAction).toMatchObject({ rows: 4, points: 1200, backToBack: true })
+    // 800 half again, and 50 for the second clear in a row (combo 1)
+    expect(second.lastAction).toMatchObject({ rows: 4, points: 1250, backToBack: true, combo: 1 })
     expect(Game.linesOf(second)).toBe(8)
   })
 
@@ -70,5 +71,25 @@ describe('back to back', () => {
   test('a difficult clear starts the run', () => {
     expect(play(iOver(4), intoColumn9).backToBack).toBe(true)
     expect(spinDouble().backToBack).toBe(true)
+  })
+})
+
+describe('combos', () => {
+  test('the first clear after a lock that cleared nothing is combo 0 and adds nothing', () => {
+    const first = play(iOver(2), intoColumn9)
+    expect(first.lastAction).toMatchObject({ rows: 2, points: 300, combo: 0 })
+    expect(first.combo).toBe(0)
+  })
+
+  test('the third clear in a row at level 3 is combo 2: a single scores 100 x 3 and 50 x 2 x 3, 600', () => {
+    const locked = play(iOver(1, { combo: 1, level: 3, startLevel: 3 }), intoColumn9)
+    expect(locked.lastAction).toMatchObject({ rows: 1, points: 600, combo: 2 })
+    expect(locked.combo).toBe(2)
+  })
+
+  test('a lock that clears nothing ends the run: the count goes back to -1, and the next clear is combo 0', () => {
+    const broken = play(gameWith('O', undefined, { combo: 4 }), ['hardDrop'])
+    expect(broken.combo).toBe(-1)
+    expect(Game.newGame(1).combo).toBe(-1)
   })
 })
