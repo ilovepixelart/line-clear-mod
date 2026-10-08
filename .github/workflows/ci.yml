@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Nightly against the newest Claude Code: the mod API is early access and
+    # can change between releases without notice.
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Claude Code version
+        run: claude --version
+
+      # One script holds every gate, so a green local run is the same check.
+      - name: Gates
+        run: node scripts/gates.mjs

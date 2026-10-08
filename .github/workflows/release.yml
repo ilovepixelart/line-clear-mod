@@ -1,0 +1,56 @@
+name: release
+
+# A tag created by `claude plugin tag --push` (line-clear--v<version>) runs
+# every gate again on the tagged commit, then publishes a GitHub Release with
+# the CHANGELOG section as notes, a zip of the plugin for --plugin-url and the
+# zip's SHA-256.
+on:
+  push:
+    tags:
+      - 'line-clear--v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Claude Code version
+        run: claude --version
+
+      # The same gates as ci.yml, with the tag checked against the version.
+      - name: Gates
+        run: node scripts/gates.mjs --tag "$GITHUB_REF_NAME"
+
+      - name: Build the plugin zip
+        run: |
+          version=$(node -p "require('./.claude-plugin/plugin.json').version")
+          archive="line-clear-$version.zip"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
+          git archive --format=zip --prefix=line-clear/ -o "$archive" HEAD
+          sha256sum "$archive" | tee "$archive.sha256"
+
+      - name: Release notes
+        run: node scripts/check-release.mjs --notes > notes.md
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ARCHIVE" "$ARCHIVE.sha256" \
+            --verify-tag \
+            --title "line-clear $VERSION" \
+            --notes-file notes.md

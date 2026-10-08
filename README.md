@@ -33,14 +33,25 @@ What `claude plugin validate .` reports the module calls: nothing yet.
 ## Development
 
 ```sh
-claude plugin validate --strict .
-claude plugin test .
-npx -p typescript tsc -p .
+node scripts/gates.mjs          # release check, validate, test, typecheck
+node scripts/gates.mjs --load   # also the tests eight times at once
 ```
 
+Both workflows run the same script, so a green local run is the check CI
+makes.
+
 `tsc` needs the type declarations Claude Code writes into
-`.claude-plugin/types/` when it loads the plugin; any `claude --plugin-dir .`
-run writes them, even one that stops at "Not logged in".
+`.claude-plugin/types/` when it loads the plugin; the gates write them with a
+`claude --plugin-dir . -p` run when they are missing, which works even when it
+stops at "Not logged in".
+
+To release, add the version's section to `CHANGELOG.md`, set the version in
+`.claude-plugin/plugin.json` (its only home), merge, then run
+`claude plugin tag --push` on `main`. The pushed `line-clear--v<version>` tag
+starts the release workflow, which runs the gates again with the tag checked
+against the version and publishes the GitHub release with the CHANGELOG
+section as notes, `line-clear-<version>.zip` for `claude --plugin-url`, and the
+zip's `.sha256`.
 
 ## License
 
