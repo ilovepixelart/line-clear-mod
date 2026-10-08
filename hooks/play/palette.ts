@@ -53,6 +53,10 @@ export const COLORS = {
   /** A card over the well: its background and its text. */
   card: '#2A2540',
   cardText: 'text',
+  /** Cleared rows, as they flash before they go. */
+  flash: '#FFF4DC',
+  /** The word a clear is called in the well's top edge. */
+  callout: '#FFD479',
   /** The status line while the game has the keys. */
   keys: 'success',
   /** The status line while the keys go to the prompt: the warning that Escape there interrupts Claude. */

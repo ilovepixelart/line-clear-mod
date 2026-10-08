@@ -26,6 +26,9 @@ export type Focus = 'region' | 'pane' | 'none'
 /** What the hooks module tells the game: whether the pane holds the keys, and a seed base from its clock. */
 export type Outside = { readonly paneFocused: boolean; readonly seedBase: number }
 
+/** The last lock that cleared rows: when, on the frame clock, and how many rows. */
+export type Clear = { readonly at: number; readonly rows: number }
+
 /** The game region's own state, kept by the Client between frames. */
 export type Play = {
   /** Engine time: TICK_MS per frame of the frame clock. */
@@ -42,11 +45,13 @@ export type Play = {
   readonly seq: number
   /** Whether the ended game's score was handed to the hooks module. */
   readonly reported: boolean
+  /** The last clear in this game, for the flash and the callout; null before one. */
+  readonly clear: Clear | null
 }
 
 /** A region that has seen nothing yet; presses up to `seq` came before it and are not its to apply. */
 export function startPlay(seq: number): Play {
-  return { now: 0, game: null, region: false, lastKeyAt: 0, autoPaused: false, seq, reported: false }
+  return { now: 0, game: null, region: false, lastKeyAt: 0, autoPaused: false, seq, reported: false, clear: null }
 }
 
 /** The one place that decides who has the keys: a clicked region first, then the focused pane. */
@@ -81,7 +86,18 @@ function synced(play: Play, outside: Outside): Play {
 function started(play: Play, outside: Outside): Play {
   const seed = (outside.seedBase + play.now) >>> 0
 
-  return { ...play, game: Game.newGame(seed, { startMs: play.now }), autoPaused: false, reported: false }
+  return { ...play, game: Game.newGame(seed, { startMs: play.now }), autoPaused: false, reported: false, clear: null }
+}
+
+/** `after` with its clear noted when the game in it cleared rows since `before`. */
+function noted(before: Play, after: Play): Play {
+  const was = before.game
+  const { game } = after
+  if (was === null || game === null || game === was || game.lines <= was.lines) {
+    return after
+  }
+
+  return { ...after, clear: { at: after.now, rows: game.lastClear.length } }
 }
 
 function applied(play: Play, inputs: readonly Input[]): Play {
@@ -96,7 +112,7 @@ export function ticked(play: Play, outside: Outside): Play {
   const isIdle = play.region && now - play.lastKeyAt >= IDLE_MS
   const moved = synced({ ...play, now, region: play.region && !isIdle }, outside)
 
-  return moved.game?.phase === 'playing' ? { ...moved, game: Game.step(moved.game, 'tick', now) } : moved
+  return noted(play, moved.game?.phase === 'playing' ? { ...moved, game: Game.step(moved.game, 'tick', now) } : moved)
 }
 
 /** A click on the region: it has the keys now, and a click with no game running starts one. */
@@ -122,7 +138,7 @@ export function keyed(play: Play, event: ClientKeyEvent, outside: Outside): Play
     return focused
   }
 
-  return applied(focused, inputsOfKey(event))
+  return noted(play, applied(focused, inputsOfKey(event)))
 }
 
 /**
@@ -144,7 +160,7 @@ export function pressed(play: Play, presses: readonly Press[], outside: Outside)
     }
   }
 
-  return current
+  return noted(play, current)
 }
 
 /** The ended game's score while it has not been handed over yet; null otherwise. */

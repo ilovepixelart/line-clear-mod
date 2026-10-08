@@ -25,6 +25,10 @@ release may change behaviour.
   level, lines and best, a ghost shaded in the falling piece's own color,
   and a game-over card that starts the next game on a click (or `p` with the
   pane focused).
+- Cleared rows light up and empty from the middle out over five frames
+  (250 ms) before the rows above fall, and the clear is called out in the
+  well's top edge for 1.5 s: `single`, `double`, `triple` or
+  `four at once!`. Both run on the frame clock, so no extra timer.
 - The best score is kept across sessions, the only value stored.
 - `openOnTurn` setting, off by default: opens the pane, unfocused, when a
   turn starts.

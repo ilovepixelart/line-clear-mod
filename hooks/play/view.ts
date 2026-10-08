@@ -3,7 +3,7 @@ import type { ClientElements, Color, RenderElement } from 'claude-code'
 import Game from '../game'
 import type { GameState, Kind, Point } from '../game'
 import { COLORS, GHOST_COLORS, PIECE_COLORS } from './palette'
-import { focusOf } from './play'
+import { TICK_MS, focusOf } from './play'
 import type { Focus, Outside, Play } from './play'
 
 /** A run of text drawn in one style. */
@@ -23,6 +23,13 @@ const PANEL = 10
 const GAP = 2
 const WELL_INNER = Game.WIDTH * CELL.length
 const WELL = WELL_INNER + 2
+
+/** How long cleared rows show before they go: five frames, lit whole and then emptied from the middle out. */
+export const FLASH_MS = 5 * TICK_MS
+/** How long a clear is called out in the well's top edge. */
+export const CALLOUT_MS = 1_500
+/** What a clear of one to four rows is called. */
+export const CALLOUTS: Readonly<Record<number, string>> = { 1: 'single', 2: 'double', 3: 'triple', 4: 'four at once!' }
 
 /** The columns the game takes: hold panel, well, next panel and the gaps between. */
 export const GAME_COLUMNS = PANEL + GAP + WELL + GAP + PANEL
@@ -122,15 +129,54 @@ function cardOf(play: Play, outside: Outside): string[] | null {
 
 const has = (points: readonly Point[], x: number, y: number) => points.some(point => point.x === x && point.y === y)
 
-/** The well's visible rows: locked cells and the falling piece as tiles, the ghost shaded under it. */
-function boardRows(game: GameState | null): Line[] {
-  const board = game === null ? null : Game.boardOf(game)
-  const ghost = game === null ? [] : Game.ghostOf(game)
+/** A cell of a cleared row, still showing. */
+type Lit = 'lit'
+
+/** The rows the last lock cleared, while they still show, and how many frames they have shown; null otherwise. */
+function flashOf(play: Play): { rows: readonly number[]; frame: number } | null {
+  const { game, clear } = play
+  if (game === null || clear === null || game.lastClear.length === 0) {
+    return null
+  }
+  const elapsed = play.now - clear.at
+
+  return elapsed < FLASH_MS ? { rows: game.lastClear, frame: Math.floor(elapsed / TICK_MS) } : null
+}
+
+/** The visible board as it was just before the clear: the kept rows back in place around the cleared ones, the falling piece over it. */
+function unclearedOf(game: GameState, rows: readonly number[]): (Kind | Lit | null)[][] {
+  const kept = game.board.slice(rows.length)
+  let next = 0
+  const whole = Array.from({ length: Game.ROWS }, (_, y): (Kind | Lit | null)[] => (rows.includes(y) ? Array.from({ length: Game.WIDTH }, (): Lit => 'lit') : [...kept[next++]!]))
+  const visible = whole.slice(Game.HIDDEN_ROWS)
+  for (const { x, y } of Game.activeOf(game)) {
+    visible[y]![x] ??= game.active!.kind
+  }
+
+  return visible
+}
+
+/** Whether a cleared row's cell at column `x` has gone by `frame`: the middle pair first, then outward. */
+const isSwept = (x: number, frame: number) => (x < Game.WIDTH / 2 ? Game.WIDTH / 2 - 1 - x : x - Game.WIDTH / 2) < frame
+
+/**
+ * The well's visible rows: locked cells and the falling piece as tiles, the
+ * ghost shaded under it. Just after a clear, the board as it was, its
+ * cleared rows lit and sweeping out.
+ */
+function boardRows(play: Play): Line[] {
+  const { game } = play
+  const flash = game === null ? null : flashOf(play)
+  const board = game === null ? null : flash === null ? Game.boardOf(game) : unclearedOf(game, flash.rows)
+  const ghost = game === null || flash !== null ? [] : Game.ghostOf(game)
   const kind = game?.active?.kind
 
   return Array.from({ length: Game.VISIBLE_ROWS }, (_, y) =>
     Array.from({ length: Game.WIDTH }, (_, x): Segment => {
       const cell = board?.[y]?.[x] ?? null
+      if (cell === 'lit') {
+        return isSwept(x, flash!.frame) ? plain(EMPTY, COLORS.grid) : { text: CELL, color: COLORS.flash }
+      }
       if (cell !== null) {
         return { text: CELL, color: PIECE_COLORS[cell] }
       }
@@ -138,6 +184,19 @@ function boardRows(game: GameState | null): Line[] {
       return kind !== undefined && has(ghost, x, y) ? { text: GHOST, color: GHOST_COLORS[kind] } : plain(EMPTY, COLORS.grid)
     }),
   )
+}
+
+/** The well's top edge, with the last clear called out in it for CALLOUT_MS. */
+function wellTop(play: Play): Line {
+  const { clear } = play
+  const word = clear === null || play.now - clear.at >= CALLOUT_MS ? undefined : CALLOUTS[clear.rows]
+  if (word === undefined) {
+    return [boxTop(WELL_INNER)]
+  }
+  const label = ` ${word} `
+  const left = Math.floor((WELL_INNER - label.length) / 2)
+
+  return [plain(`╭${'─'.repeat(left)}`, COLORS.frame), { text: label, color: COLORS.callout, bold: true }, plain(`${'─'.repeat(WELL_INNER - left - label.length)}╮`, COLORS.frame)]
 }
 
 /** The board with a card laid across its middle rows: a blank row above and below the text. */
@@ -160,7 +219,7 @@ function withCard(rows: Line[], card: string[] | null): Line[] {
 }
 
 function well(play: Play, outside: Outside): Line[] {
-  return [[boxTop(WELL_INNER)], ...withCard(boardRows(play.game), cardOf(play, outside)).map(line => boxed(line)), [boxBottom(WELL_INNER)]]
+  return [wellTop(play), ...withCard(boardRows(play), cardOf(play, outside)).map(line => boxed(line)), [boxBottom(WELL_INNER)]]
 }
 
 const widthOf = (line: Line) => line.reduce((sum, segment) => sum + segment.text.length, 0)
