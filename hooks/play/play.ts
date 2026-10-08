@@ -2,7 +2,8 @@ import type { ClientKeyEvent, ClientPointerEvent } from 'claude-code'
 
 import Game from '../game'
 import type { GameState, Input } from '../game'
-import { inputOfHotkey, inputsOfKey } from './keys'
+import { inputOfHotkey, pressOf, pressesOf } from './keys'
+import type { LastKey } from './keys'
 
 /** The frame clock's period: the game moves on this much engine time each frame. */
 export const TICK_MS = 50
@@ -49,11 +50,13 @@ export type Play = {
   readonly clear: Clear | null
   /** The best score kept when this game started: the one it has to beat, which saving its own score does not move. */
   readonly bestBefore: number
+  /** The last key or hotkey seen, to tell a held key's repeats from new presses. */
+  readonly lastKey: LastKey
 }
 
 /** A region that has seen nothing yet; presses up to `seq` came before it and are not its to apply. */
 export function startPlay(seq: number): Play {
-  return { now: 0, game: null, region: false, lastKeyAt: 0, autoPaused: false, seq, reported: false, clear: null, bestBefore: 0 }
+  return { now: 0, game: null, region: false, lastKeyAt: 0, autoPaused: false, seq, reported: false, clear: null, bestBefore: 0, lastKey: null }
 }
 
 /** The one place that decides who has the keys: a clicked region first, then the focused pane. */
@@ -135,12 +138,13 @@ export function pointed(play: Play, event: ClientPointerEvent, outside: Outside)
  */
 export function keyed(play: Play, event: ClientKeyEvent, outside: Outside): Play {
   const wasRegion = play.region
-  const focused = synced({ ...play, region: true, lastKeyAt: play.now }, outside)
+  const { inputs, last } = pressesOf(event, play.lastKey, play.now)
+  const focused = synced({ ...play, region: true, lastKeyAt: play.now, lastKey: last }, outside)
   if (!wasRegion || !isRunning(focused.game)) {
     return focused
   }
 
-  return noted(play, applied(focused, inputsOfKey(event)))
+  return noted(play, applied(focused, inputs))
 }
 
 /**
@@ -154,7 +158,12 @@ export function pressed(play: Play, presses: readonly Press[], outside: Outside)
     return play
   }
   let current: Play = synced({ ...play, seq: Math.max(...fresh.map(press => press.seq)) }, outside)
-  for (const input of fresh.flatMap(press => inputOfHotkey(press.key) ?? [])) {
+  for (const press of fresh) {
+    const { input, last } = pressOf(press.key, inputOfHotkey(press.key), current.lastKey, current.now)
+    current = { ...current, lastKey: last }
+    if (input === undefined) {
+      continue
+    }
     if (isRunning(current.game)) {
       current = applied(current, [input])
     } else if (input === 'pause') {

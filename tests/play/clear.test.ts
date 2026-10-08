@@ -69,7 +69,7 @@ describe('a line clear on the frame clock', () => {
   })
 
   test('the next lock ends the flash: a drop mid-flash shows the board as it is', () => {
-    const next = Play.keyed(frames(cleared(2), 1), { key: 'x' }, AWAY)
+    const next = Play.keyed(frames(cleared(2), 1), { key: 'space' }, AWAY)
     expect(litSegments(next)).toEqual([])
     expect(wellRows(next).slice(-2)).not.toContain('████████████████████')
     expect(screen(next).flat().some(segment => segment.text.includes(Play.GHOST)), 'the ghost is back').toBe(true)

@@ -10,7 +10,8 @@ const AWAY_STATUS = 'click to play · or ctrl+x tab, then w a s d'
 /** Hard drops until the game-over card shows (plain or new best, both offer to play again); how many it took, or -1. */
 async function dropUntilOver(ui: Awaited<ReturnType<typeof mounted>>): Promise<number> {
   for (let drops = 1; drops <= 200; drops++) {
-    await ui.key({ key: 'space' })
+    // space and x in turn: two different keys are taps, never one held key
+    await ui.key({ key: drops % 2 === 0 ? 'space' : 'x' })
     if ((await wellLines(ui)).some(line => line.includes('play again'))) {
       return drops
     }

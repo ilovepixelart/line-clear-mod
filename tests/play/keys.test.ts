@@ -37,7 +37,6 @@ describe('keys on the clicked game region', () => {
 
   test('a burst that arrives as one event is split into its keys, in order', () => {
     expect(Play.inputsOfKey({ key: 'wasd' })).toEqual(['rotateCw', 'left', 'softDrop', 'right'])
-    expect(Play.inputsOfKey({ key: 'aa x' })).toEqual(['left', 'left', 'hardDrop', 'hardDrop'])
   })
 
   test('a burst keeps its known keys and drops the unknown ones', () => {
@@ -59,6 +58,51 @@ describe('keys on the clicked game region', () => {
   test('a key held with ctrl or meta is a shortcut, not a move', () => {
     expect(Play.inputsOfKey({ key: 'a', ctrl: true })).toEqual([])
     expect(Play.inputsOfKey({ key: 'left', meta: true })).toEqual([])
+  })
+})
+
+describe('a held key', () => {
+  /** The inputs of key events, each at its time, read in order with what came before. */
+  function pressed(events: readonly [string, number][]): string[][] {
+    let last: Play.LastKey = null
+    return events.map(([key, at]) => {
+      const read = Play.pressesOf({ key }, last, at)
+      last = read.last
+      return read.inputs
+    })
+  }
+
+  test('a hard drop held down drops once: its repeats come 120 ms apart or less', () => {
+    expect(pressed([['x', 0], ['x', 30], ['x', 60], ['x', 180]])).toEqual([['hardDrop'], [], [], []])
+    expect(pressed([['space', 0], ['space', 50]])).toEqual([['hardDrop'], []])
+  })
+
+  test('the same key pressed again after a pause of more than 120 ms counts again', () => {
+    expect(pressed([['x', 0], ['x', 121]])).toEqual([['hardDrop'], ['hardDrop']])
+  })
+
+  test('turns, hold and pause act once while held; left, right and down repeat', () => {
+    for (const key of ['w', 'q', 'up', 'z', 'c', 'p']) {
+      expect(pressed([[key, 0], [key, 40], [key, 80]]).map(inputs => inputs.length), key).toEqual([1, 0, 0])
+    }
+    expect(pressed([['a', 0], ['a', 40], ['a', 80]])).toEqual([['left'], ['left'], ['left']])
+    expect(pressed([['right', 0], ['right', 40]])).toEqual([['right'], ['right']])
+    expect(pressed([['s', 0], ['s', 40]])).toEqual([['softDrop'], ['softDrop']])
+  })
+
+  test('another key ends the hold: the held key counts again after it', () => {
+    expect(pressed([['x', 0], ['a', 30], ['x', 60]])).toEqual([['hardDrop'], ['left'], ['hardDrop']])
+    expect(pressed([['x', 0], ['k', 30], ['x', 60]])).toEqual([['hardDrop'], [], ['hardDrop']])
+  })
+
+  test('a burst of one key is a held key; a burst of different keys is taps', () => {
+    expect(pressed([['xxx', 0]])).toEqual([['hardDrop']])
+    expect(pressed([['aa x', 0]])).toEqual([['left', 'left', 'hardDrop', 'hardDrop']])
+    expect(pressed([['wwaa', 0]])).toEqual([['rotateCw', 'left', 'left']])
+  })
+
+  test('a shifted letter is the same key as its lowercase', () => {
+    expect(pressed([['x', 0], ['X', 30]])).toEqual([['hardDrop'], []])
   })
 })
 

@@ -28,7 +28,8 @@ const rowOf = (play: PlayState) => play.game?.active?.y
 function toppedOut(play: PlayState): PlayState {
   let current = play
   for (let drops = 0; drops < 200 && current.game?.phase !== 'over'; drops++) {
-    current = Play.keyed(current, { key: 'space' }, AWAY)
+    // space and x in turn: two different keys are taps, never one held key
+    current = Play.keyed(current, { key: drops % 2 === 0 ? 'space' : 'x' }, AWAY)
   }
 
   return current
@@ -95,6 +96,21 @@ describe('keys on the clicked region', () => {
     const dropped = Play.keyed(play, { key: 'space' }, AWAY)
     expect(dropped.game?.active?.kind).toBe(play.game?.queue[0])
     expect(Game.boardOf(dropped.game!).at(-1)!.some(cell => cell !== null)).toBe(true)
+  })
+
+  test('space held down drops one piece, not one per repeat', () => {
+    const once = Play.keyed(clicked(), { key: 'space' }, AWAY)
+    const held = Play.keyed(Play.keyed(once, { key: 'space' }, AWAY), { key: 'space' }, AWAY)
+    expect(held.game!.active).toEqual(once.game!.active)
+    expect(held.game!.board).toEqual(once.game!.board)
+    const again = Play.keyed(frames(held, 200), { key: 'space' }, AWAY)
+    expect(again.game!.active?.kind, 'pressed again after letting go').toBe(once.game!.queue[0])
+  })
+
+  test('a pane hotkey held down acts the same: one drop', () => {
+    const play = Play.pressed(Play.startPlay(0), [{ seq: 1, key: 'p' }], PANE)
+    const held = Play.pressed(play, [{ seq: 2, key: 'x' }, { seq: 3, key: 'x' }, { seq: 4, key: 'x' }], PANE)
+    expect(held.game!.active?.kind).toBe(play.game!.queue[0])
   })
 
   test('an unknown key changes nothing in the game', () => {

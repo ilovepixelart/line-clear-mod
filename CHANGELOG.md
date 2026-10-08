@@ -36,6 +36,9 @@ release may change behaviour.
 - Seven piece colors of the game's own that stay distinct (CIEDE2000 of 12
   or more) for normal vision, protanopia, deuteranopia and tritanopia, and
   keep seven different codes, ghosts too, on a 256-color terminal.
+- A held key acts once for a drop, a turn, hold and pause, and keeps
+  repeating for left, right and down: a key that comes again within 120 ms
+  is a held key's repeat.
 - The best score is kept across sessions, the only value stored.
 - `openOnTurn` setting, off by default: opens the pane, unfocused, when a
   turn starts.

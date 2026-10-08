@@ -30,6 +30,12 @@ There are two ways to give the game the keys.
 | hold | `c` | `c` |
 | pause | `p` | `p` |
 
+Hold left, right or down and the piece keeps going; hold a drop, a turn,
+hold or pause and it acts once. The game counts a key as held when it comes
+again within 120 ms. Your system waits 225 to 660 ms before it starts
+repeating a held key, so a key held just past that wait can still count
+twice.
+
 A click starts a game and, after game over, starts the next one; with the
 pane focused, `p` does.
 

@@ -44,7 +44,8 @@ function midGame(): PlayState {
 function toppedOut(play: PlayState): PlayState {
   let current = play
   for (let drops = 0; drops < 200 && current.game?.phase !== 'over'; drops++) {
-    current = Play.keyed(current, { key: ' ' }, AWAY)
+    // space and x in turn: two different keys are taps, never one held key
+    current = Play.keyed(current, { key: drops % 2 === 0 ? ' ' : 'x' }, AWAY)
   }
 
   return current
