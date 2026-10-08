@@ -260,7 +260,7 @@ describe('line clears and scoring', () => {
     expect(fillWell(2, 1).lastClear).toEqual([20, 21])
     expect(fillWell(4, 1).lastClear).toEqual([18, 19, 20, 21])
     expect(Game.newGame(7).lastClear).toEqual([])
-    const after = play(fillWell(2, 1), ['hardDrop'])
+    const after = play(Game.step(fillWell(2, 1), 'tick', Game.CLEAR_MS), ['hardDrop'], Game.CLEAR_MS)
     expect(Game.linesOf(after)).toBe(2)
     expect(after.lastClear).toEqual([])
   })
@@ -277,6 +277,59 @@ describe('line clears and scoring', () => {
     expect(Game.levelOf(cleared)).toBe(2)
     // a single at level 1 (100) and an 18-row hard drop (36)
     expect(Game.scoreOf(cleared)).toBe(136)
+  })
+})
+
+describe('the clearing pause', () => {
+  /** An I stood up over two rows of nine cells and hard dropped at time 0: it clears both rows. */
+  const clearing = () => play(gameWith('I', boardFrom('#########.', '#########.')), ['rotateCw', ...times(4, 'right'), 'hardDrop'])
+
+  test('a lock that clears rows scores at once and holds the next piece back for 200 ms', () => {
+    const game = clearing()
+    expect(Game.linesOf(game)).toBe(2)
+    expect(game.active).toBeNull()
+    expect(Game.clearingOf(game)).toEqual({ rows: [20, 21], startedAt: 0, until: Game.CLEAR_MS })
+    expect(Game.CLEAR_MS).toBe(200)
+    expect(Game.step(game, 'tick', 199).active).toBeNull()
+    const entered = Game.step(game, 'tick', 200)
+    expect(entered.active?.kind).toBe(game.queue[0])
+    expect(Game.clearingOf(entered)).toBeNull()
+  })
+
+  test('a lock that clears nothing brings the next piece on at once', () => {
+    const game = play(gameWith('O'), ['hardDrop'])
+    expect(game.active).not.toBeNull()
+    expect(Game.clearingOf(game)).toBeNull()
+  })
+
+  test('moves and drops made while rows clear are dropped; the piece enters where it spawns', () => {
+    const game = clearing()
+    const next = game.queue[0]!
+    const entered = Game.step(play(game, ['left', 'left', 'softDrop', 'hardDrop'], 100), 'tick', 200)
+    expect(entered.active).toEqual({ ...Game.spawnPiece(next), y: Game.spawnPiece(next).y + 1 })
+    expect(Game.scoreOf(entered)).toBe(Game.scoreOf(game))
+  })
+
+  test('the last turn made while rows clear is kept and done as the piece enters', () => {
+    const turned = (inputs: ('rotateCw' | 'rotateCcw')[]) => Game.step(play(clearing(), inputs, 100), 'tick', 200).active?.rotation
+    expect(turned(['rotateCw'])).toBe(1)
+    expect(turned(['rotateCw', 'rotateCcw'])).toBe(3)
+    expect(turned(['rotateCcw', 'rotateCw'])).toBe(1)
+  })
+
+  test('a hold made while rows clear is kept and done as the piece enters', () => {
+    const game = clearing()
+    const [first, second] = game.queue
+    const entered = Game.step(Game.step(game, 'hold', 100), 'tick', 200)
+    expect(Game.holdOf(entered)).toEqual({ kind: first, canHold: false })
+    expect(entered.active?.kind).toBe(second)
+  })
+
+  test('a pause while rows clear holds the clearing too', () => {
+    const paused = Game.step(clearing(), 'pause', 100)
+    const resumed = Game.step(paused, 'pause', 1100)
+    expect(Game.step(resumed, 'tick', 1199).active).toBeNull()
+    expect(Game.step(resumed, 'tick', 1200).active).not.toBeNull()
   })
 })
 

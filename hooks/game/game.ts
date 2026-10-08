@@ -6,6 +6,7 @@ import { pieceCells, spawnPiece } from './pieces'
 import type { Piece } from './pieces'
 import { seedRandom } from './random'
 import {
+  CLEAR_MS,
   HARD_DROP_POINTS,
   LOCK_DELAY_MS,
   LOCK_RESET_CAP,
@@ -59,7 +60,15 @@ export type GameState = {
   readonly pausedAt: number | null
   /** The board rows the last lock cleared, top to bottom, numbered as they were before the clear; empty when it cleared none. */
   readonly lastClear: readonly number[]
+  /**
+   * While cleared rows go, before the next piece enters: when that started and
+   * ends, and the last turn and the hold asked for meanwhile, done as it enters.
+   */
+  readonly clearing: Clearing | null
 }
+
+/** The pause between a lock that clears rows and the next piece. */
+export type Clearing = { readonly startedAt: number; readonly until: number; readonly turn: 1 | -1 | 0; readonly hold: boolean }
 
 /** How many of the pieces to come a preview shows. */
 export const PREVIEW_SIZE = 3
@@ -128,17 +137,42 @@ function locked(state: GameState, at: number): GameState {
   const { board, cleared, rows } = clearedRows(placed(state.board, piece))
   const lines = state.lines + cleared
 
-  return nextPiece(
-    {
-      ...state,
-      board,
-      score: state.score + clearScore(cleared, state.level),
-      lines,
-      level: levelFor(state.startLevel, lines),
-      lastClear: rows,
-    },
-    at,
-  )
+  const scored = {
+    ...state,
+    board,
+    score: state.score + clearScore(cleared, state.level),
+    lines,
+    level: levelFor(state.startLevel, lines),
+    lastClear: rows,
+  }
+  if (cleared === 0) {
+    return nextPiece(scored, at)
+  }
+
+  return { ...scored, active: null, lockAt: null, clearing: { startedAt: at, until: at + CLEAR_MS, turn: 0, hold: false } }
+}
+
+/** The next piece entering once the clearing ends, with the hold and the turn asked for meanwhile. */
+function cleared(state: GameState, clearing: Clearing): GameState {
+  const at = clearing.until
+  let next = nextPiece({ ...state, clearing: null }, at)
+  if (clearing.hold && next.phase === 'playing') {
+    next = held(next, at)
+  }
+  if (clearing.turn !== 0 && next.phase === 'playing') {
+    next = pressed(next, clearing.turn === 1 ? 'rotateCw' : 'rotateCcw', at)
+  }
+
+  return next
+}
+
+/** An input while rows clear: a turn or a hold is kept for the next piece, anything else is dropped. */
+function buffered(state: GameState, clearing: Clearing, input: Input): GameState {
+  if (input === 'rotateCw' || input === 'rotateCcw') {
+    return { ...state, clearing: { ...clearing, turn: input === 'rotateCw' ? 1 : -1 } }
+  }
+
+  return input === 'hold' ? { ...state, clearing: { ...clearing, hold: true } } : state
 }
 
 /**
@@ -163,6 +197,9 @@ function movedTo(state: GameState, piece: Piece, at: number, isPress: boolean): 
 
 /** One thing time does by `now`: a row of gravity or a lock, or the same state when nothing is due. */
 function timeStep(state: GameState, now: number): GameState {
+  if (state.clearing !== null) {
+    return now >= state.clearing.until ? cleared(state, state.clearing) : state
+  }
   const piece = state.active!
   if (state.lockAt !== null) {
     const lockDue = state.lockAt + LOCK_DELAY_MS
@@ -257,6 +294,7 @@ function resumed(state: GameState, now: number): GameState {
     pausedAt: null,
     fallAt: state.fallAt + pausedFor,
     lockAt: state.lockAt === null ? null : state.lockAt + pausedFor,
+    clearing: state.clearing === null ? null : { ...state.clearing, startedAt: state.clearing.startedAt + pausedFor, until: state.clearing.until + pausedFor },
   }
 }
 
@@ -286,6 +324,7 @@ export function newGame(seed: number, options: GameOptions = {}): GameState {
     lowestY: 0,
     pausedAt: null,
     lastClear: [],
+    clearing: null,
   }
 
   return nextPiece(empty, options.startMs ?? 0)
@@ -308,7 +347,11 @@ export function step(state: GameState, input: Input, nowMs: number): GameState {
     return current
   }
 
-  return input === 'pause' ? { ...current, phase: 'paused', pausedAt: nowMs } : applied(current, input, nowMs)
+  if (input === 'pause') {
+    return { ...current, phase: 'paused', pausedAt: nowMs }
+  }
+
+  return current.clearing === null ? applied(current, input, nowMs) : buffered(current, current.clearing, input)
 }
 
 const toVisible = ({ x, y }: Point): Point => ({ x, y: y - HIDDEN_ROWS })
@@ -341,6 +384,11 @@ export function ghostOf(state: GameState): Point[] {
   return pieceCells({ ...piece, y: piece.y + dropDistance(state.board, piece) })
     .map(toVisible)
     .filter(isVisible)
+}
+
+/** The rows going while a clear holds the next piece back, and when that started and ends; null otherwise. */
+export function clearingOf(state: GameState): { rows: readonly number[]; startedAt: number; until: number } | null {
+  return state.clearing === null ? null : { rows: state.lastClear, startedAt: state.clearing.startedAt, until: state.clearing.until }
 }
 
 /** The next PREVIEW_SIZE pieces, the first one next. */

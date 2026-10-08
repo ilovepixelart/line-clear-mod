@@ -24,8 +24,6 @@ const GAP = 2
 const WELL_INNER = Game.WIDTH * CELL.length
 const WELL = WELL_INNER + 2
 
-/** How long cleared rows show before they go: five frames, lit whole and then emptied from the middle out. */
-export const FLASH_MS = 5 * TICK_MS
 /** How long a clear is called out in the well's top edge. */
 export const CALLOUT_MS = 1_500
 /** What a clear of one to four rows is called. */
@@ -160,15 +158,15 @@ const has = (points: readonly Point[], x: number, y: number) => points.some(poin
 /** A cell of a cleared row, still showing. */
 type Lit = 'lit'
 
-/** The rows the last lock cleared, while they still show, and how many frames they have shown; null otherwise. */
-function flashOf(play: Play): { rows: readonly number[]; frame: number } | null {
-  const { game, clear } = play
-  if (game === null || clear === null || game.lastClear.length === 0) {
+/** The rows going while the engine holds the next piece back, and how many pairs of columns have gone; null otherwise. */
+function flashOf(play: Play, game: GameState): { rows: readonly number[]; swept: number } | null {
+  const clearing = Game.clearingOf(game)
+  if (clearing === null) {
     return null
   }
-  const elapsed = play.now - clear.at
+  const pairs = Game.WIDTH / 2
 
-  return elapsed < FLASH_MS ? { rows: game.lastClear, frame: Math.floor(elapsed / TICK_MS) } : null
+  return { rows: clearing.rows, swept: Math.floor(((play.now - clearing.startedAt) * pairs) / (clearing.until - clearing.startedAt)) }
 }
 
 /** The visible board as it was just before the clear: the kept rows back in place around the cleared ones, the falling piece over it. */
@@ -184,8 +182,8 @@ function unclearedOf(game: GameState, rows: readonly number[]): (Kind | Lit | nu
   return visible
 }
 
-/** Whether a cleared row's cell at column `x` has gone by `frame`: the middle pair first, then outward. */
-const isSwept = (x: number, frame: number) => (x < Game.WIDTH / 2 ? Game.WIDTH / 2 - 1 - x : x - Game.WIDTH / 2) < frame
+/** Whether a cleared row's cell at column `x` has gone once `swept` pairs have: the middle pair first, then outward. */
+const isSwept = (x: number, swept: number) => (x < Game.WIDTH / 2 ? Game.WIDTH / 2 - 1 - x : x - Game.WIDTH / 2) < swept
 
 /**
  * The well's visible rows: locked cells and the falling piece as tiles, the
@@ -194,7 +192,7 @@ const isSwept = (x: number, frame: number) => (x < Game.WIDTH / 2 ? Game.WIDTH /
  */
 function boardRows(play: Play): Line[] {
   const { game } = play
-  const flash = game === null ? null : flashOf(play)
+  const flash = game === null ? null : flashOf(play, game)
   const board = game === null ? null : flash === null ? Game.boardOf(game) : unclearedOf(game, flash.rows)
   const ghost = game === null || flash !== null ? [] : Game.ghostOf(game)
   const kind = game?.active?.kind
@@ -203,7 +201,7 @@ function boardRows(play: Play): Line[] {
     Array.from({ length: Game.WIDTH }, (_, x): Segment => {
       const cell = board?.[y]?.[x] ?? null
       if (cell === 'lit') {
-        return isSwept(x, flash!.frame) ? plain(EMPTY, COLORS.grid) : { text: CELL, color: COLORS.flash }
+        return isSwept(x, flash!.swept) ? plain(EMPTY, COLORS.grid) : { text: CELL, color: COLORS.flash }
       }
       if (cell !== null) {
         return { text: CELL, color: PIECE_COLORS[cell] }

@@ -102,6 +102,10 @@ inputs always replay the same game.
   kick table ([`hooks/game/pieces.ts`](hooks/game/pieces.ts)). The square
   never kicks.
 - **Hold.** Once per piece; allowed again when a piece locks.
+- **Clearing.** A lock that clears rows holds the next piece back for
+  200 ms while the rows go. Moves and drops made meanwhile are dropped; the
+  last turn and a hold are done as the next piece enters. A lock that clears
+  nothing brings the next piece on at once.
 - **Gravity.** `(0.8 - (level - 1) * 0.007) ^ (level - 1)` seconds a row:
   1000 ms at level 1, 355 ms at level 5, 64 ms at level 10, and no faster than
   level 15's 7 ms.

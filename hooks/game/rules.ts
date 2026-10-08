@@ -16,6 +16,9 @@ export const HARD_DROP_POINTS = 2
 /** Rows to clear for each level up. */
 export const LINES_PER_LEVEL = 10
 
+/** How long cleared rows stay before the next piece enters: a lock that clears nothing brings it on at once. */
+export const CLEAR_MS = 200
+
 /** How long a piece may rest on the stack before it locks. */
 export const LOCK_DELAY_MS = 500
 

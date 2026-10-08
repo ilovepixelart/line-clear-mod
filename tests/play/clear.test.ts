@@ -41,20 +41,29 @@ const litSegments = (play: PlayState) => screen(play).flat().filter(segment => s
 const I_LEFT = '· · · · · · · · · ██'
 
 describe('a line clear on the frame clock', () => {
-  test('the cleared rows light up whole, then empty from the middle out, a pair of columns a frame', () => {
+  test('while the rows clear (200 ms, four frames) they light up whole, then empty from the middle out', () => {
     const play = cleared(2)
     expect(play.game!.lines).toBe(2)
     const bottom = (at: number) => wellRows(frames(play, at)).slice(-4)
+    // a pair of columns goes every 40 ms: 0, 1, 2 and 3 pairs gone at 0, 50, 100 and 150 ms
     expect(bottom(0)).toEqual([I_LEFT, I_LEFT, '████████████████████', '████████████████████'])
     expect(bottom(1).slice(2)).toEqual(['████████· · ████████', '████████· · ████████'])
     expect(bottom(2).slice(2)).toEqual(['██████· · · · ██████', '██████· · · · ██████'])
     expect(bottom(3).slice(2)).toEqual(['████· · · · · · ████', '████· · · · · · ████'])
-    expect(bottom(4).slice(2)).toEqual(['██· · · · · · · · ██', '██· · · · · · · · ██'])
     expect(litSegments(frames(play, 0)).length).toBeGreaterThan(0)
   })
 
-  test('after five frames (250 ms) the well shows the rows gone and what was above them fallen', () => {
-    const after = frames(cleared(2), 5)
+  test('no piece moves over the clearing rows: the next one enters when they are gone', () => {
+    const play = cleared(2)
+    for (const at of [0, 1, 2, 3]) {
+      expect(frames(play, at).game!.active, `frame ${at}`).toBeNull()
+      expect(wellRows(frames(play, at)).slice(0, 4).every(row => !row.includes(Play.CELL)), `frame ${at}`).toBe(true)
+    }
+    expect(frames(play, 4).game!.active).not.toBeNull()
+  })
+
+  test('after four frames (200 ms) the well shows the rows gone and what was above them fallen', () => {
+    const after = frames(cleared(2), 4)
     // column 9 holds the rest of the I; the next piece's ghost may lie elsewhere on these rows
     expect(wellRows(after).slice(-4).map(row => row.slice(-2))).toEqual(['· ', '· ', '██', '██'])
     expect(wellRows(after).slice(-4).every(row => !row.includes(Play.CELL.repeat(2)))).toBe(true)
@@ -68,11 +77,12 @@ describe('a line clear on the frame clock', () => {
     expect(wellTop(play)).toBe(`╭${'─'.repeat(20)}╮`)
   })
 
-  test('the next lock ends the flash: a drop mid-flash shows the board as it is', () => {
-    const next = Play.keyed(frames(cleared(2), 1), { key: 'space' }, AWAY)
-    expect(litSegments(next)).toEqual([])
-    expect(wellRows(next).slice(-2)).not.toContain('████████████████████')
-    expect(screen(next).flat().some(segment => segment.text.includes(Play.GHOST)), 'the ghost is back').toBe(true)
+  test('a drop pressed while the rows clear does nothing; once they are gone the ghost is back', () => {
+    const pressed = Play.keyed(frames(cleared(2), 1), { key: 'space' }, AWAY)
+    expect(pressed.game!.score).toBe(cleared(2).game!.score)
+    const after = frames(pressed, 3)
+    expect(litSegments(after)).toEqual([])
+    expect(screen(after).flat().some(segment => segment.text.includes(Play.GHOST)), 'the ghost is back').toBe(true)
   })
 
   test('a clear by the lock delay on the frame clock flashes too', () => {

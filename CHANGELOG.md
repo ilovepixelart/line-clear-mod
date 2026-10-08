@@ -25,10 +25,12 @@ release may change behaviour.
   level, lines and best, a ghost shaded in the falling piece's own color,
   and a game-over card that starts the next game on a click (or `p` with the
   pane focused).
-- Cleared rows light up and empty from the middle out over five frames
-  (250 ms) before the rows above fall, and the clear is called out in the
-  well's top edge for 1.5 s: `single`, `double`, `triple` or
-  `four at once!`. Both run on the frame clock, so no extra timer.
+- A lock that clears rows holds the next piece back for 200 ms while the
+  rows light up and empty from the middle out; moves made meanwhile are
+  dropped, and the last turn and a hold are done as the next piece enters.
+  The clear is called out in the well's top edge for 1.5 s: `single`,
+  `double`, `triple` or `four at once!`. Both run on the frame clock, so no
+  extra timer.
 - A new best is an event: a game that beats the best it started against
   ends on a gold card, `✦ new best ✦` twinkling every 250 ms, with the score
   and how far it beat the old best; while the score in play is ahead, the
