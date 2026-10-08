@@ -27,10 +27,11 @@ export function isOpen(board: Board, x: number, y: number): boolean {
   return x >= 0 && x < WIDTH && y >= 0 && y < ROWS && board[y]![x] === null
 }
 
-/** The board with every full row removed and as many empty rows added on top. */
-export function clearedRows(board: Board): { board: Board; cleared: number } {
-  const kept = board.filter(row => row.some(cell => cell === null))
-  const cleared = board.length - kept.length
+/** The board with every full row removed and as many empty rows added on top, and which rows those were, top to bottom. */
+export function clearedRows(board: Board): { board: Board; cleared: number; rows: number[] } {
+  const isFull = (row: Board[number]) => row.every(cell => cell !== null)
+  const rows = board.flatMap((row, y) => (isFull(row) ? [y] : []))
+  const kept = board.filter(row => !isFull(row))
 
-  return { board: [...Array.from({ length: cleared }, emptyRow), ...kept], cleared }
+  return { board: [...Array.from({ length: rows.length }, emptyRow), ...kept], cleared: rows.length, rows }
 }

@@ -141,17 +141,19 @@ describe('locking and clearing', () => {
     expect(bottomRows(EMPTY, 1), 'the board placed on is unchanged').toEqual(['..........'])
   })
 
-  const cases: [string, string[], number, string[]][] = [
-    ['no full row clears nothing', ['#########.'], 0, ['#########.']],
-    ['one full row', ['#.........', '##########'], 1, ['..........', '#.........']],
-    ['two full rows with a partial one between keeps the partial one', ['##########', '#.#.#.#.#.', '##########'], 2, ['..........', '..........', '#.#.#.#.#.']],
-    ['three full rows', ['.........#', '##########', '##########', '##########'], 3, ['..........', '..........', '..........', '.........#']],
-    ['four full rows', ['##########', '##########', '##########', '##########'], 4, ['..........', '..........', '..........', '..........']],
+  // the rows are the board's own, 24 deep: the bottom row is 23
+  const cases: [string, string[], number, number[], string[]][] = [
+    ['no full row clears nothing', ['#########.'], 0, [], ['#########.']],
+    ['one full row', ['#.........', '##########'], 1, [23], ['..........', '#.........']],
+    ['two full rows with a partial one between keeps the partial one', ['##########', '#.#.#.#.#.', '##########'], 2, [21, 23], ['..........', '..........', '#.#.#.#.#.']],
+    ['three full rows', ['.........#', '##########', '##########', '##########'], 3, [21, 22, 23], ['..........', '..........', '..........', '.........#']],
+    ['four full rows', ['##########', '##########', '##########', '##########'], 4, [20, 21, 22, 23], ['..........', '..........', '..........', '..........']],
   ]
-  for (const [name, rows, cleared, after] of cases) {
+  for (const [name, rows, cleared, at, after] of cases) {
     test(`clearing: ${name}`, () => {
       const result = Game.clearedRows(boardFrom(...rows))
       expect(result.cleared).toBe(cleared)
+      expect(result.rows, 'the rows cleared, as numbered before the clear').toEqual(at)
       expect(bottomRows(result.board, rows.length)).toEqual(after)
       expect(result.board).toHaveLength(Game.ROWS)
     })

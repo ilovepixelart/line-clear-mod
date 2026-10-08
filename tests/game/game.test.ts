@@ -214,6 +214,15 @@ describe('line clears and scoring', () => {
     expect([1, 2, 3, 4].map(rows => Game.scoreOf(fillWell(rows, 5)))).toEqual([538, 1538, 2538, 4038])
   })
 
+  test('the game records which board rows the last lock cleared, and none once a lock clears nothing', () => {
+    expect(fillWell(2, 1).lastClear).toEqual([22, 23])
+    expect(fillWell(4, 1).lastClear).toEqual([20, 21, 22, 23])
+    expect(Game.newGame(7).lastClear).toEqual([])
+    const after = play(fillWell(2, 1), ['hardDrop'])
+    expect(Game.linesOf(after)).toBe(2)
+    expect(after.lastClear).toEqual([])
+  })
+
   test('cleared rows leave the rest of the I above them', () => {
     expect(lastRows(fillWell(1, 1), 4)).toEqual(['..........', '.........#', '.........#', '.........#'])
     expect(lastRows(fillWell(4, 1), 1)).toEqual(['..........'])

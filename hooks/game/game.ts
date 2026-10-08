@@ -57,8 +57,8 @@ export type GameState = {
   readonly lowestY: number
   /** When the game was paused, while it is. */
   readonly pausedAt: number | null
-  /** How many rows the last lock cleared. */
-  readonly lastClear: number
+  /** The board rows the last lock cleared, top to bottom, numbered as they were before the clear; empty when it cleared none. */
+  readonly lastClear: readonly number[]
 }
 
 /** How many of the pieces to come a preview shows. */
@@ -117,7 +117,7 @@ function locked(state: GameState, at: number): GameState {
   if (pieceCells(piece).every(({ y }) => y < HIDDEN_ROWS)) {
     return ended({ ...state, board: placed(state.board, piece) }, 'lock-out')
   }
-  const { board, cleared } = clearedRows(placed(state.board, piece))
+  const { board, cleared, rows } = clearedRows(placed(state.board, piece))
   const lines = state.lines + cleared
 
   return nextPiece(
@@ -127,7 +127,7 @@ function locked(state: GameState, at: number): GameState {
       score: state.score + clearScore(cleared, state.level),
       lines,
       level: levelFor(state.startLevel, lines),
-      lastClear: cleared,
+      lastClear: rows,
     },
     at,
   )
@@ -276,7 +276,7 @@ export function newGame(seed: number, options: GameOptions = {}): GameState {
     lockResets: 0,
     lowestY: 0,
     pausedAt: null,
-    lastClear: 0,
+    lastClear: [],
   }
 
   return nextPiece(empty, options.startMs ?? 0)
