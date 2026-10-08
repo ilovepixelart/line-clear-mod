@@ -1,11 +1,19 @@
 # line-clear
 
-**A falling-block line-clearing game to play in a pane while Claude works.**
+**A falling-block game for the 40 seconds Claude spends thinking.**
 
-A Claude Code mod. Seven four-cell pieces fall into a ten-wide well; fill a
-row and it clears. The game is its own design, with its own look.
+You asked for a refactor. Claude is reading 31 files. You could watch the
+spinner. Or you could clear four rows at once while it works.
 
-Status: in development, not released yet.
+![line-clear in a Claude Code pane: Claude writes a long story on the left while a game is played on the right, rows clear and the well calls them out](assets/demo.gif)
+
+A Claude Code mod. Seven four-cell pieces fall into a well ten wide and
+eighteen deep; fill a row and it goes. The rules are the ones the modern games
+share, spins, back to back and combos included. The look is the game's own:
+its own colors, its own well, its own words for what you just did.
+
+Nothing is sent anywhere, nothing touches your files, and the only thing it
+remembers is your best score. Your productivity remains your own business.
 
 ## How to play
 
@@ -42,9 +50,14 @@ pane focused, `p` does.
 
 The status line under the well always says who has the keys:
 `playing · Esc gives keys back` (the clicked well),
-`keys: w a s d · Esc gives keys back` (the focused pane), or, in the warning
-color, `click to play · or ctrl+x tab, then w a s d`, with a card over the
-well, when the keys go to the prompt.
+`keys: w a s d · Esc gives keys back` (the focused pane),
+`paused · p resumes` (you paused it), or, in the warning color,
+`click to play · or ctrl+x tab, then w a s d`, with a card over the well,
+when the keys go to the prompt.
+
+Beat your best and the game-over card turns gold and twinkles. The best
+label says `new!` the moment you pass it, so you know to stop playing
+safe. You will not stop playing safe.
 
 ### Why click to play, and why the keyboard path has no arrows
 
@@ -90,14 +103,27 @@ adds nothing to the transcript.
 
 ## The rules
 
+The rules follow the widely documented modern guideline mechanics, as the
+[Hard Drop wiki](https://harddrop.com/wiki/) describes them:
+[SRS](https://harddrop.com/wiki/SRS) turns and kicks,
+[spins](https://harddrop.com/wiki/T-Spin) by the three-corner rule,
+[scoring](https://harddrop.com/wiki/Scoring) with
+[back to back](https://harddrop.com/wiki/Back-to-Back) and
+[combos](https://harddrop.com/wiki/Combo), and
+[move reset](https://harddrop.com/wiki/Lock_delay) lock delay. The well is
+18 rows deep rather than 20, and the look and the words are the game's own.
+
 The engine in [`hooks/game/`](hooks/game) is pure: no clock, no randomness,
 no I/O. `newGame(seed, options)` starts a game and
 `step(state, input, nowMs)` returns the next one, applying the time first
 (gravity rows and locks due by `nowMs`) and then the input. The same seed and
 inputs always replay the same game.
 
-- **Well.** 10 columns by 18 visible rows, with 4 hidden rows above where
-  pieces enter.
+- **Well.** 10 columns by 18 visible rows, with 4 hidden rows above.
+- **Entering.** A piece spawns flat in the two hidden rows just above the
+  well, centred (the 3-wide ones left of centre), and drops one row at once
+  when there is room, so it shows straight away. A lock that clears nothing
+  brings the next piece on at once.
 - **Pieces.** Seven four-cell pieces, dealt from a 7-bag (each run of seven
   holds one of each) shuffled by a seeded generator. The next five are shown.
 - **Turning.** Super Rotation System states and wall kicks, from its published
@@ -106,8 +132,7 @@ inputs always replay the same game.
 - **Hold.** Once per piece; allowed again when a piece locks.
 - **Clearing.** A lock that clears rows holds the next piece back for
   200 ms while the rows go. Moves and drops made meanwhile are dropped; the
-  last turn and a hold are done as the next piece enters. A lock that clears
-  nothing brings the next piece on at once.
+  last turn and a hold are done as the next piece enters.
 - **Gravity.** `(0.8 - (level - 1) * 0.007) ^ (level - 1)` seconds a row:
   1000 ms at level 1, 355 ms at level 5, 64 ms at level 10, and no faster than
   level 15's 7 ms.
@@ -131,7 +156,9 @@ inputs always replay the same game.
 - **All clear.** A clear that empties the well adds 800, 1200, 1800 or 2000
   for one to four rows, 3200 for a back to back four, times the level, on
   top of the clear's own points.
-- **Levels.** Up one every 10 cleared rows from the start level.
+- **Levels.** Fixed goal: up one every 10 cleared rows from the start level,
+  called out as it happens. The game is endless; gravity stops speeding up
+  at level 15.
 - **Game over.** Block out (the next piece has no room to enter) or lock out
   (a piece locks with every cell in the hidden rows).
 - **Pause.** Freezes gravity and the lock delay; ignores every other input.
@@ -143,25 +170,57 @@ The numbers live in [`hooks/game/rules.ts`](hooks/game/rules.ts).
 In the pane, the game's time is the frame clock: each 50 ms frame moves the
 game on 50 ms. When Claude Code draws frames late (measured at about 55 ms a
 frame mid-turn), the game runs that much slower instead of skipping rows.
-Each game's seed comes from the clock when it starts.
+The drawing thread does have `performance.now()`, but it reads the wall
+clock, which the test harness's frame clock does not move, so the fixed step
+is what keeps every timing test deterministic. Each game's seed comes from
+the clock when it starts.
+
+Not in this game:
+
+- **Key remapping.** The letters are fixed; on AZERTY and other layouts use
+  the arrows on the clicked well.
+- **Ambiguous-width terminals.** The blocks and box lines are East Asian
+  ambiguous-width characters, which most terminals draw one column wide; a
+  terminal set to draw them two wide breaks the layout.
+- **Delayed auto shift settings.** A held key repeats at your system's key
+  repeat rate, not at tunable game rates.
+- **A Marathon end, garbage and versus.** One endless solo game.
 
 ## Install
 
-Requires Claude Code 2.1.287 or later (mods).
+Requires Claude Code 2.1.287 or later (mods). Developed and tested on 2.1.294.
+The game is designed for a dark Claude Code theme; on a light theme some of
+it is hard to read.
 
-Straight from this repository, following `main`:
+From the ilovepixelart marketplace, which pins each mod to its latest release:
+
+```
+/plugin marketplace add ilovepixelart/claude-code-mods
+/plugin install line-clear@ilovepixelart
+```
+
+Or in one line, straight from this repository, following `main`:
 
 ```
 /plugin install line-clear --marketplace ilovepixelart/line-clear-mod
 ```
+
+To stay on one release, add this repository at its tag instead:
+`/plugin marketplace add ilovepixelart/line-clear-mod#line-clear--v0.1.0`.
+
+Run `/reload-plugins` (or start a new session) after installing. To take a new
+release later, run `claude plugin update line-clear@ilovepixelart` in your
+shell. Each [release](https://github.com/ilovepixelart/line-clear-mod/releases)
+also carries a zip of the plugin for `claude --plugin-url`, and
+[CHANGELOG.md](CHANGELOG.md) lists what each one changed.
 
 To try it from a clone without installing: `claude --plugin-dir /path/to/line-clear-mod`.
 
 ## Versioning
 
 Releases follow [Semantic Versioning](https://semver.org/). While the version
-is 0.x, any release may change behaviour. [CHANGELOG.md](CHANGELOG.md) lists
-what each release changed.
+is 0.x, any release may change behaviour. The one value the mod keeps, the
+best score, is a plain number in the plugin's own store.
 
 ## Access
 
@@ -188,6 +247,10 @@ makes.
 `.claude-plugin/types/` when it loads the plugin; the gates write them with a
 `claude --plugin-dir . -p` run when they are missing, which works even when it
 stops at "Not logged in".
+
+The demo is recorded with [vhs](https://github.com/charmbracelet/vhs) in a
+scratch project, with Claude Code running in tmux so a script can read the
+well and play.
 
 To release, add the version's section to `CHANGELOG.md`, set the version in
 `.claude-plugin/plugin.json` (its only home), merge, then run
