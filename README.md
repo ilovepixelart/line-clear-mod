@@ -242,7 +242,8 @@ What `claude plugin validate .` reports the module hooks and calls:
 ## Development
 
 ```sh
-node scripts/gates.mjs          # release check, validate, test, typecheck
+node scripts/gates.mjs              # release check, validate, test: what CI runs
+node scripts/gates.mjs --typecheck  # also the typecheck, once the plugin was opened interactively
 node scripts/gates.mjs --load   # also the tests eight times at once
 ```
 
